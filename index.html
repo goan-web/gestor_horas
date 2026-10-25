@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Horas Extras - Sistema de Gestión</title>
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-input: #0f172a;
+      --border-color: #334155;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --rose: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 24px; }
+    
+    .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+    #login-container { max-width: 400px; margin: 80px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    #login-container h2 { text-align: center; margin-bottom: 20px; color: var(--primary); }
+
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; flex-wrap: wrap; gap: 16px; }
+    h1 { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+    .subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .balance-box { background-color: var(--bg-card); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); text-align: right; }
+    .balance-box span { font-size: 0.75rem; color: var(--text-muted); display: block; }
+    #total-horas { font-size: 1.1rem; font-weight: bold; color: var(--emerald); }
+
+    section { background-color: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 16px; }
+
+    form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; align-items: end; }
+    .full-width { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+    .time-range-group { display: flex; align-items: center; gap: 8px; }
+    .time-range-group input { flex: 1; min-width: 110px; }
+
+    label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+    input, select { width: 100%; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.875rem; color: var(--text-main); outline: none; transition: border-color 0.2s; }
+    input:focus, select:focus { border-color: var(--primary); }
+    
+    #horas_extras { background-color: #030712; border-color: rgba(99, 102, 241, 0.5); color: var(--primary); font-weight: bold; cursor: not-allowed; }
+    #horario_rotativo_text { background-color: #030712; border-color: rgba(52, 211, 153, 0.3); color: var(--emerald); font-weight: bold; cursor: not-allowed; text-align: center; }
+
+    button { padding: 8px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: none; transition: background 0.2s; }
+    .btn-primary { background-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-secondary { background-color: #334155; color: var(--text-main); }
+    .btn-secondary:hover { background-color: #475569; }
+    .btn-success { background-color: #059669; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .btn-success:hover { background-color: #047857; }
+    .btn-danger { background-color: #dc2626; color: #fff; }
+    .btn-danger:hover { background-color: #b91c1c; }
+
+    .scrollable-box-5-lines { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-top: 15px; max-height: 165px; overflow-y: auto; }
+    .scrollable-box-5-lines ul { margin-left: 20px; color: var(--text-muted); }
+
+    .table-container-10-lines { max-height: 480px; overflow-y: auto; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; color: #cbd5e1; }
+    thead { background-color: #0f172a; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
+    th, td { padding: 12px; border-bottom: 1px solid var(--border-color); }
+    tbody tr:hover { background-color: rgba(255, 255, 255, 0.02); }
+
+    .row-counter { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 6px; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-card { background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .password-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+    .password-wrapper input { padding-right: 36px; }
+    .btn-eye { position: absolute; right: 8px; background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; color: var(--text-muted); opacity: 0.7; }
+    .btn-eye:hover { opacity: 1; }
+
+    .checkbox-container { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-main); }
+    .checkbox-item input { width: auto; cursor: pointer; }
+
+    .pdf-section { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+    .pdf-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pdf-controls span { font-size: 0.875rem; font-weight: 600; color: #cbd5e1; }
+    .pdf-controls input, .pdf-controls select { width: 130px; padding: 6px; font-size: 0.75rem; }
+
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; border: 1px solid; display: inline-block; }
+    .badge-extra { background-color: rgba(52, 211, 153, 0.1); color: var(--emerald); border-color: rgba(52, 211, 153, 0.3); }
+    .badge-feriado { background-color: rgba(99, 102, 241, 0.1); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }
+    .badge-papeleta { background-color: rgba(251, 191, 36, 0.1); color: var(--amber); border-color: rgba(251, 191, 36, 0.3); }
+    
+    .actions { display: flex; justify-content: center; gap: 8px; }
+    .btn-action { padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; }
+    .btn-edit { background: rgba(251, 191, 36, 0.1); color: var(--amber); }
+    .btn-edit:hover { background: rgba(251, 191, 36, 0.2); }
+    .btn-delete { background: rgba(248, 113, 113, 0.1); color: var(--rose); }
+    .btn-delete:hover { background: rgba(248, 113, 113, 0.2); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="login-container">
+    <h2>🔐 Iniciar Sesión</h2>
+    <form id="login-form" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label>Usuario</label>
+        <input type="text" id="login-usuario" required placeholder="Ej: admin">
+      </div>
+      <div>
+        <label>Contraseña</label>
+        <input type="password" id="login-password" required placeholder="••••••">
+      </div>
+      <button type="submit" class="btn-primary" style="margin-top: 10px;">Ingresar</button>
+    </form>
+  </div>
+
+  <!-- APLICACIÓN PRINCIPAL -->
+  <div id="app-container" class="container hidden">
+    
+    <header>
+      <div>
+        <h1>⏱️ Gestor de Horas Extras</h1>
+        <p class="subtitle" id="welcome-user">Bienvenido</p>
+      </div>
+      <div class="user-info">
+        <div class="balance-box" id="balance-box-container">
+          <span>Balance Acumulado</span>
+          <span id="total-horas">00:00 hrs</span>
+        </div>
+        <button id="btn-config-user" onclick="abrirModalPassword()" class="btn-secondary hidden" title="Configurar / Cambiar Contraseña" style="padding: 8px 12px;">⚙️</button>
+        <button onclick="cerrarSesion()" class="btn-danger">Cerrar Sesión</button>
+      </div>
+    </header>
+
+    <!-- MODAL CAMBIO DE CONTRASEÑA -->
+    <div id="modal-password" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h2>🔑 Configurar Mi Contraseña</h2>
+        <form id="password-form" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+          <div>
+            <label>Nueva Contraseña</label>
+            <div class="password-wrapper">
+              <input type="password" id="new-password" required placeholder="Nueva clave">
+              <button type="button" class="btn-eye" onclick="togglePasswordVisibility('new-password', this)">👁️</button>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+            <button type="button" onclick="cerrarModalPassword()" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Actualizar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- PANEL ADMINISTRADOR / SUPERVISOR -->
+    <section id="admin-panel-section" class="hidden">
+      
+      <!-- GESTIÓN DE ÁREAS -->
+      <div id="admin-area-management" class="hidden" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+        <h2 id="area-form-title">🏢 0. Crear y Gestionar Áreas</h2>
+        <form id="area-form" style="max-width: 450px; display: flex; gap: 12px; align-items: flex-end;">
+          <input type="hidden" id="area-id-db">
+          <div style="flex: 1;">
+            <label>Nombre del Área</label>
+            <input type="text" id="area-nombre" required placeholder="Ej: Operaciones Mineras">
+          </div>
+          <button type="button" id="btn-cancel-area" onclick="cancelarEdicionArea()" class="btn-secondary hidden" style="height: 38px;">Cancelar</button>
+          <button type="submit" id="btn-submit-area" class="btn-primary" style="height: 38px;">Crear Área</button>
+        </form>
+        <div class="scrollable-box-5-lines" style="max-width: 600px;">
+          <strong>Áreas Registradas:</strong>
+          <ul id="lista-areas-config">
+            <li>No hay áreas registradas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- CONFIGURACIÓN DE TURNOS -->
+      <div id="admin-turnos-management" class="hidden">
+        <h2 id="turno-form-title">⚙️ 1. Configurar Horarios Rotativos</h2>
+        <form id="turno-form">
+          <input type="hidden" id="turno-id">
+          <div>
+            <label>Nombre del Turno</label>
+            <select id="turno-nombre" required>
+              <option value="Horario 1">Horario 1</option>
+              <option value="Horario 2">Horario 2</option>
+              <option value="Horario 3">Horario 3</option>
+            </select>
+          </div>
+          <div>
+            <label>Fecha Inicio</label>
+            <input type="date" id="turno-inicio" required>
+          </div>
+          <div>
+            <label>Fecha Fin</label>
+            <input type="date" id="turno-fin" required>
+          </div>
+          <div>
+            <label>Lunes a Viernes (Horario)</label>
+            <div class="time-range-group">
+              <input type="time" id="turno-lv-desde" value="07:00" required>
+              <span style="color: var(--text-muted);">-</span>
+              <input type="time" id="turno-lv-hasta" value="17:00" required>
+            </div>
+          </div>
+          <div>
+            <label>Sábado (Horario)</label>
+            <div class="time-range-group">
+              <input type="time" id="turno-sab-desde" value="08:00" required>
+              <span style="color: var(--text-muted);">-</span>
+              <input type="time" id="turno-sab-hasta" value="13:00" required>
+            </div>
+          </div>
+          <div class="full-width">
+            <button type="button" id="btn-cancel-turno" onclick="cancelarEdicionTurno()" class="btn-secondary hidden">Cancelar</button>
+            <button type="submit" id="btn-submit-turno" class="btn-primary">Guardar Horario Rotativo</button>
+          </div>
+        </form>
+
+        <div class="scrollable-box-5-lines" style="margin-bottom: 25px;">
+          <strong>Horarios Rotativos Disponibles:</strong>
+          <ul id="lista-turnos-config">
+            <li>No hay turnos registrados.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- REGISTRO DE COLABORADORES -->
+      <h2 id="user-section-title" style="margin-top: 20px;">👥 2. Registrar Colaborador / Supervisor</h2>
+      <form id="user-form">
+        <input type="hidden" id="user-id-db">
+        
+        <div>
+          <label>DNI</label>
+          <input type="text" id="usr-dni" required maxlength="8">
+        </div>
+        <div>
+          <label>Nombres</label>
+          <input type="text" id="usr-nombres" required>
+        </div>
+        <div>
+          <label>Apellidos</label>
+          <input type="text" id="usr-apellidos" required>
+        </div>
+        <div>
+          <label>Usuario</label>
+          <input type="text" id="usr-usuario" required>
+        </div>
+        <div>
+          <label>Contraseña</label>
+          <input type="password" id="usr-password" required>
+        </div>
+        <div id="rol-container">
+          <label>Rol</label>
+          <select id="usr-rol" onchange="actualizarSelectAreasColaborador()">
+            <option value="usuario">Usuario</option>
+            <option value="supervisor">Supervisor</option>
+            <option id="opt-admin" value="admin">Administrador</option>
+          </select>
+        </div>
+        <div id="area-assign-container">
+          <label id="lbl-area-assign">Área Asignada</label>
+          <select id="usr-area">
+            <option value="">-- Sin Área (Admin) --</option>
+          </select>
+        </div>
+        <div style="grid-column: 1 / -1;" id="turnos-assign-box">
+          <label>Asignar Horario(s) Rotativo(s)</label>
+          <div id="usr-turnos-checkboxes" class="checkbox-container">
+            <span style="font-size:0.75rem; color: var(--text-muted);">No hay horarios creados.</span>
+          </div>
+        </div>
+
+        <div class="full-width">
+          <button type="button" onclick="cancelarEdicionUsuario()" id="btn-cancel-user" class="btn-secondary hidden">Cancelar</button>
+          <button type="submit" id="btn-submit-user" class="btn-primary">Guardar Colaborador</button>
+        </div>
+      </form>
+
+      <div class="table-container-10-lines" style="margin-top: 20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>DNI</th>
+              <th>Colaborador</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Área</th>
+              <th id="th-pass-col">Contraseña</th>
+              <th>Turnos Asignados</th>
+              <th style="text-align: center;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FORMULARIO HORAS EXTRAS (SOLO USUARIOS) -->
+    <section id="overtime-section" class="hidden">
+      <h2 id="form-title">➕ Registrar Horas Extras / Feriado / Papeleta</h2>
+      <form id="overtime-form">
+        <input type="hidden" id="record-id">
+
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="fecha" required>
+        </div>
+
+        <div>
+          <label>Horario</label>
+          <input type="text" id="horario_rotativo_text" readonly placeholder="HH:MM - HH:MM">
+        </div>
+
+        <div>
+          <label>Extra Desde</label>
+          <input type="time" id="extra_desde" required>
+        </div>
+
+        <div>
+          <label>Extra Hasta</label>
+          <input type="time" id="extra_hasta" required>
+        </div>
+
+        <div>
+          <label>H. Extras (Auto)</label>
+          <input type="text" id="horas_extras" readonly placeholder="00:00">
+        </div>
+
+        <div>
+          <label>Tipo de Registro</label>
+          <select id="tipo_registro" onchange="validarYCalcularAuto()">
+            <option value="extra">Hora Extra (Normal)</option>
+            <option value="feriado">Feriado Laborado (Suma con Break)</option>
+            <option value="papeleta">Papeleta (No Suma)</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Notas / Detalle</label>
+          <input type="text" id="notas" placeholder="Ej: Apoyo en almacén">
+        </div>
+
+        <div class="full-width">
+          <button type="button" id="btn-cancel" onclick="cancelarEdicion()" class="btn-secondary hidden">Cancelar</button>
+          <button type="submit" id="btn-submit" class="btn-primary">Guardar Registro</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="pdf-section">
+      <div class="pdf-controls">
+        <span>📄 Exportar Reporte PDF:</span>
+        <div id="pdf-filtro-area-container" style="display:inline-block;" class="hidden"></div>
+        <div id="pdf-filtro-usuario-container" style="display:inline-block;"></div>
+        <input type="date" id="pdf-desde">
+        <span style="color: var(--text-muted); font-size: 0.75rem;">a</span>
+        <input type="date" id="pdf-hasta">
+      </div>
+      <button onclick="exportarPDF()" class="btn-success">
+        🖨️ Descargar / Imprimir PDF
+      </button>
+    </section>
+
+    <section>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <h2 style="margin-bottom:0;">📋 Histórico de Registros</h2>
+        
+        <!-- Filtros de tabla en pantalla (Área, Colaborador, Rango de Fechas) -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <div id="admin-filtro-tabla-container" class="hidden" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <div id="filtro-area-wrapper" class="hidden">
+              <label style="margin:0; font-size:0.8rem;">Área:</label>
+              <select id="filtro-tabla-area" onchange="actualizarFiltroUsuariosPorArea()" style="padding: 4px 8px; font-size: 0.8rem; width: 130px;"></select>
+            </div>
+            <label style="margin:0; font-size:0.8rem;">Colaborador:</label>
+            <select id="filtro-tabla-usuario" onchange="cargarRegistros()" style="padding: 4px 8px; font-size: 0.8rem; width: 150px;"></select>
+          </div>
+          
+          <!-- Filtro de Fechas en Pantalla -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <label style="margin:0; font-size:0.8rem;">Desde:</label>
+            <input type="date" id="tabla-desde" onchange="cargarRegistros()" style="padding: 4px; font-size: 0.75rem; width: 120px;">
+            <label style="margin:0; font-size:0.8rem;">Hasta:</label>
+            <input type="date" id="tabla-hasta" onchange="cargarRegistros()" style="padding: 4px; font-size: 0.75rem; width: 120px;">
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-container-10-lines">
+        <table>
+          <thead>
+            <tr>
+              <th id="th-colab" class="hidden">Colaborador</th>
+              <th>Horario</th>
+              <th>Fecha</th>
+              <th>Extra Desde</th>
+              <th>Extra Hasta</th>
+              <th>Tiempo Extra</th>
+              <th>Tipo</th>
+              <th>Notas</th>
+              <th style="text-align: center;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="records-table"></tbody>
+        </table>
+      </div>
+      <div id="row-counter-display" class="row-counter">Mostrando 0 registros</div>
+    </section>
+  </div>
+
+  <script>
+    let usuarioActual = null;
+    let registrosCargados = [];
+    let turnosConfigList = [];
+    let usuariosLista = [];
+    let areasLista = [];
+
+    function abrirModalPassword() {
+      document.getElementById('modal-password').classList.remove('hidden');
+    }
+    function cerrarModalPassword() {
+      document.getElementById('modal-password').classList.add('hidden');
+      document.getElementById('password-form').reset();
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerText = '🙈';
+      } else {
+        input.type = 'password';
+        btn.innerText = '👁️';
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const usuario = document.getElementById('login-usuario').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, password })
+        });
+
+        if (!res.ok) {
+          alert("Usuario o contraseña incorrectos.");
+          return;
+        }
+
+        const data = await res.json();
+        usuarioActual = data.user;
+        
+        document.getElementById('login-container').classList.add('hidden');
+        document.getElementById('app-container').classList.remove('hidden');
+        document.getElementById('welcome-user').innerText = `Bienvenido, ${usuarioActual.nombres} ${usuarioActual.apellidos} (${usuarioActual.rol.toUpperCase()})`;
+
+        await cargarAreas();
+        await cargarTurnosConfig();
+
+        if (usuarioActual.rol === 'admin') {
+          document.getElementById('admin-panel-section').classList.remove('hidden');
+          document.getElementById('admin-area-management').classList.remove('hidden');
+          document.getElementById('admin-turnos-management').classList.remove('hidden');
+          document.getElementById('overtime-section').classList.add('hidden');
+          document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
+          document.getElementById('filtro-area-wrapper').classList.remove('hidden');
+          document.getElementById('pdf-filtro-area-container').classList.remove('hidden');
+          document.getElementById('th-colab').classList.remove('hidden');
+          document.getElementById('balance-box-container').classList.add('hidden');
+          document.getElementById('btn-config-user').classList.add('hidden');
+          document.getElementById('user-section-title').innerText = "👥 2. Registrar Colaborador / Supervisor";
+          document.getElementById('opt-admin').style.display = 'block';
+        } else if (usuarioActual.rol === 'supervisor') {
+          document.getElementById('admin-panel-section').classList.remove('hidden');
+          document.getElementById('admin-area-management').classList.add('hidden');
+          document.getElementById('admin-turnos-management').classList.add('hidden');
+          document.getElementById('overtime-section').classList.add('hidden');
+          document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
+          document.getElementById('filtro-area-wrapper').classList.add('hidden');
+          document.getElementById('pdf-filtro-area-container').classList.add('hidden');
+          document.getElementById('th-colab').classList.remove('hidden');
+          document.getElementById('balance-box-container').classList.add('hidden');
+          document.getElementById('btn-config-user').classList.add('hidden');
+          document.getElementById('user-section-title').innerText = "👥 Registrar Usuarios de mi Área";
+          document.getElementById('opt-admin').style.display = 'none';
+          document.getElementById('usr-rol').value = 'usuario';
+          document.getElementById('rol-container').style.display = 'none';
+          document.getElementById('area-assign-container').style.display = 'none';
+        } else {
+          document.getElementById('admin-panel-section').classList.add('hidden');
+          document.getElementById('overtime-section').classList.remove('hidden');
+          document.getElementById('admin-filtro-tabla-container').classList.add('hidden');
+          document.getElementById('th-colab').classList.add('hidden');
+          document.getElementById('balance-box-container').classList.remove('hidden');
+          document.getElementById('btn-config-user').classList.remove('hidden');
+        }
+
+        await cargarUsuarios();
+        await cargarFiltrosAreaYUsuarios();
+        await cargarRegistros();
+
+      } catch (err) {
+        console.error("Error durante el login:", err);
+        alert("Ocurrió un error al conectar con el servidor.");
+      }
+    });
+
+    function cerrarSesion() {
+      usuarioActual = null;
+      document.getElementById('app-container').classList.add('hidden');
+      document.getElementById('login-container').classList.remove('hidden');
+      document.getElementById('login-form').reset();
+    }
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nuevaPassword = document.getElementById('new-password').value;
+      
+      const res = await fetch(`/usuarios/${usuarioActual.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: nuevaPassword })
+      });
+
+      if (res.ok) {
+        alert("Contraseña actualizada exitosamente.");
+        cerrarModalPassword();
+      } else {
+        alert("Error al actualizar la contraseña.");
+      }
+    });
+
+    // Gestión de Áreas
+    async function cargarAreas() {
+      try {
+        const res = await fetch('/areas');
+        areasLista = await res.json();
+        const listaUl = document.getElementById('lista-areas-config');
+        const selectAreaUsr = document.getElementById('usr-area');
+
+        if (selectAreaUsr) {
+          selectAreaUsr.innerHTML = `<option value="">-- Sin Área (Admin) --</option>`;
+          areasLista.forEach(a => {
+            selectAreaUsr.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+          });
+        }
+
+        if (listaUl) {
+          listaUl.innerHTML = '';
+          if (areasLista.length === 0) {
+            listaUl.innerHTML = '<li>No hay áreas registradas.</li>';
+          } else {
+            areasLista.forEach(a => {
+              listaUl.innerHTML += `
+                <li style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                  <span><b>${a.nombre}</b></span>
+                  <div style="display: flex; gap: 4px;">
+                    <button onclick="editarArea(${a.id}, '${a.nombre}')" class="btn-action btn-edit" style="padding: 2px 6px;">✏️</button>
+                    <button onclick="eliminarArea(${a.id})" class="btn-action btn-delete" style="padding: 2px 6px;">🗑️</button>
+                  </div>
+                </li>
+              `;
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error al cargar áreas:", e);
+      }
+    }
+
+    document.getElementById('area-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const areaId = document.getElementById('area-id-db').value;
+      const nombre = document.getElementById('area-nombre').value;
+
+      if (areaId) {
+        await fetch(`/areas/${areaId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre })
+        });
+      } else {
+        await fetch('/areas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre })
+        });
+      }
+      cancelarEdicionArea();
+      await cargarAreas();
+      await cargarFiltrosAreaYUsuarios();
+    });
+
+    function editarArea(id, nombre) {
+      document.getElementById('area-id-db').value = id;
+      document.getElementById('area-nombre').value = nombre;
+      document.getElementById('area-form-title').innerText = "✏️ Modificar Área";
+      document.getElementById('btn-submit-area').innerText = "Actualizar Área";
+      document.getElementById('btn-cancel-area').classList.remove('hidden');
+    }
+
+    function cancelarEdicionArea() {
+      document.getElementById('area-form').reset();
+      document.getElementById('area-id-db').value = '';
+      document.getElementById('area-form-title').innerText = "🏢 0. Crear y Gestionar Áreas";
+      document.getElementById('btn-submit-area').innerText = "Crear Área";
+      document.getElementById('btn-cancel-area').classList.add('hidden');
+    }
+
+    async function eliminarArea(id) {
+      if (confirm("¿Seguro de eliminar esta área?")) {
+        await fetch(`/areas/${id}`, { method: 'DELETE' });
+        await cargarAreas();
+        await cargarFiltrosAreaYUsuarios();
+      }
+    }
+
+    function actualizarSelectAreasColaborador() {
+      const rol = document.getElementById('usr-rol').value;
+      const areaContainer = document.getElementById('area-assign-container');
+      const turnosBox = document.getElementById('turnos-assign-box');
+      if (rol === 'admin') {
+        areaContainer.style.display = 'none';
+        turnosBox.style.display = 'none';
+      } else {
+        areaContainer.style.display = 'block';
+        turnosBox.style.display = 'block';
+      }
+    }
+
+    async function cargarTurnosConfig() {
+      try {
+        const res = await fetch('/turnos');
+        turnosConfigList = await res.json();
+        const listaUl = document.getElementById('lista-turnos-config');
+        const containerCheckboxes = document.getElementById('usr-turnos-checkboxes');
+
+        if (containerCheckboxes) {
+          containerCheckboxes.innerHTML = '';
+          if (turnosConfigList.length === 0) {
+            containerCheckboxes.innerHTML = '<span style="font-size:0.75rem; color: var(--text-muted);">No hay horarios creados.</span>';
+          } else {
+            turnosConfigList.forEach(t => {
+              containerCheckboxes.innerHTML += `
+                <label class="checkbox-item">
+                  <input type="checkbox" name="usr_turnos" value="${t.id}">
+                  <span><b>${t.nombre_turno}</b> (${t.lunes_viernes})</span>
+                </label>
+              `;
+            });
+          }
+        }
+
+        if (listaUl && usuarioActual && usuarioActual.rol === 'admin') {
+          listaUl.innerHTML = '';
+          if (turnosConfigList.length === 0) {
+            listaUl.innerHTML = '<li>No hay turnos registrados.</li>';
+          } else {
+            turnosConfigList.forEach(t => {
+              listaUl.innerHTML += `
+                <li style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                  <span><b>${t.nombre_turno}</b> (${formatearFechaVisual(t.fecha_inicio)} al ${formatearFechaVisual(t.fecha_fin)}): L-V [${t.lunes_viernes}]</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button onclick="editarTurno(${t.id})" class="btn-action btn-edit" style="padding: 2px 6px;">✏️</button>
+                    <button onclick="eliminarTurno(${t.id})" class="btn-action btn-delete" style="padding: 2px 6px;">🗑️</button>
+                  </div>
+                </li>
+              `;
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error al cargar turnos:", e);
+      }
+    }
+
+    document.getElementById('turno-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const turnoId = document.getElementById('turno-id').value;
+      const lvDesde = document.getElementById('turno-lv-desde').value;
+      const lvHasta = document.getElementById('turno-lv-hasta').value;
+      const sabDesde = document.getElementById('turno-sab-desde').value;
+      const sabHasta = document.getElementById('turno-sab-hasta').value;
+
+      const turnoData = {
+        nombre_turno: document.getElementById('turno-nombre').value,
+        fecha_inicio: document.getElementById('turno-inicio').value,
+        fecha_fin: document.getElementById('turno-fin').value,
+        lunes_viernes: `${lvDesde} - ${lvHasta}`,
+        sabado: `${sabDesde} - ${sabHasta}`
+      };
+
+      if (turnoId) {
+        await fetch(`/turnos/${turnoId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(turnoData)
+        });
+      } else {
+        await fetch('/turnos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(turnoData)
+        });
+      }
+
+      cancelarEdicionTurno();
+      await cargarTurnosConfig();
+    });
+
+    function editarTurno(id) {
+      const t = turnosConfigList.find(item => item.id === id);
+      if (!t) return;
+      document.getElementById('turno-id').value = t.id;
+      document.getElementById('turno-nombre').value = t.nombre_turno;
+      document.getElementById('turno-inicio').value = t.fecha_inicio;
+      document.getElementById('turno-fin').value = t.fecha_fin;
+      const lvParts = t.lunes_viernes.split('-');
+      if (lvParts.length === 2) {
+        document.getElementById('turno-lv-desde').value = lvParts[0].trim();
+        document.getElementById('turno-lv-hasta').value = lvParts[1].trim();
+      }
+      const sabParts = t.sabado.split('-');
+      if (sabParts.length === 2) {
+        document.getElementById('turno-sab-desde').value = sabParts[0].trim();
+        document.getElementById('turno-sab-hasta').value = sabParts[1].trim();
+      }
+      document.getElementById('turno-form-title').innerText = "✏️ Modificar Horario Rotativo";
+      document.getElementById('btn-submit-turno').innerText = "Actualizar Horario";
+      document.getElementById('btn-cancel-turno').classList.remove('hidden');
+    }
+
+    function cancelarEdicionTurno() {
+      document.getElementById('turno-form').reset();
+      document.getElementById('turno-id').value = '';
+      document.getElementById('turno-form-title').innerText = "⚙️ 1. Configurar Horarios Rotativos";
+      document.getElementById('btn-submit-turno').innerText = "Guardar Horario Rotativo";
+      document.getElementById('btn-cancel-turno').classList.add('hidden');
+    }
+
+    async function eliminarTurno(id) {
+      if (confirm("¿Estás seguro de eliminar este turno?")) {
+        await fetch(`/turnos/${id}`, { method: 'DELETE' });
+        await cargarTurnosConfig();
+      }
+    }
+
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch('/usuarios');
+        usuariosLista = await res.json();
+        const tbody = document.getElementById('users-table-body');
+        tbody.innerHTML = '';
+
+        let filtrados = usuariosLista;
+        if (usuarioActual.rol === 'supervisor') {
+          const areaIdSup = obtenerAreaIdActualSupervisor();
+          filtrados = usuariosLista.filter(u => Number(u.area_id) === areaIdSup);
+          document.getElementById('th-pass-col').classList.add('hidden');
+        } else {
+          document.getElementById('th-pass-col').classList.remove('hidden');
+        }
+
+        filtrados.forEach(u => {
+          const areaObj = areasLista.find(a => Number(a.id) === Number(u.area_id));
+          const nombreArea = areaObj ? areaObj.nombre : 'Sin Área';
+          const idsAsignados = u.turnos_asignados_ids || [];
+          const nombresTurnos = turnosConfigList
+            .filter(t => idsAsignados.includes(t.id))
+            .map(t => t.nombre_turno)
+            .join(', ');
+
+          let passTd = '';
+          if (usuarioActual.rol === 'admin') {
+            passTd = `<td>${u.password}</td>`;
+          }
+
+          let btnEliminarHtml = '';
+          if (u.usuario !== 'admin') {
+            if (usuarioActual.rol === 'supervisor' && Number(u.id) === Number(usuarioActual.id)) {
+              btnEliminarHtml = '';
+            } else {
+              btnEliminarHtml = `<button onclick="eliminarUsuario(${u.id})" class="btn-action btn-delete" title="Eliminar">🗑️</button>`;
+            }
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${u.dni}</td>
+            <td>${u.nombres} ${u.apellidos}</td>
+            <td>${u.usuario}</td>
+            <td><span class="badge ${u.rol === 'admin' ? 'badge-extra' : (u.rol === 'supervisor' ? 'badge-feriado' : 'badge-papeleta')}">${u.rol}</span></td>
+            <td>${nombreArea}</td>
+            ${passTd}
+            <td style="color: var(--emerald); font-weight: 500;">${nombresTurnos || 'Sin asignar'}</td>
+            <td>
+              <div class="actions">
+                <button onclick="editarUsuario(${u.id})" class="btn-action btn-edit" title="Editar">✏️</button>
+                ${btnEliminarHtml}
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error("Error al cargar usuarios:", e);
+      }
+    }
+
+    function obtenerAreaIdActualSupervisor() {
+      if (!usuarioActual) return null;
+      const supObj = usuariosLista.find(u => u.usuario === usuarioActual.usuario);
+      return supObj && supObj.area_id !== undefined && supObj.area_id !== null ? Number(supObj.area_id) : (usuarioActual.area_id ? Number(usuarioActual.area_id) : null);
+    }
+
+    async function cargarFiltrosAreaYUsuarios() {
+      try {
+        const res = await fetch('/usuarios');
+        usuariosLista = await res.json();
+        
+        const selectAreaTabla = document.getElementById('filtro-tabla-area');
+        const containerPdfArea = document.getElementById('pdf-filtro-area-container');
+
+        if (usuarioActual.rol === 'admin') {
+          selectAreaTabla.innerHTML = `<option value="todos">-- Todas las Áreas --</option>`;
+          areasLista.forEach(a => {
+            selectAreaTabla.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+          });
+
+          let pdfAreaHtml = `<select id="pdf-area" onchange="actualizarPdfUsuariosPorArea()" style="margin-right: 8px;"><option value="todos">-- Todas las Áreas --</option>`;
+          areasLista.forEach(a => {
+            pdfAreaHtml += `<option value="${a.id}">${a.nombre}</option>`;
+          });
+          pdfAreaHtml += `</select>`;
+          containerPdfArea.innerHTML = pdfAreaHtml;
+        }
+
+        actualizarFiltroUsuariosPorArea();
+        if (usuarioActual.rol === 'admin') {
+          actualizarPdfUsuariosPorArea();
+        }
+      } catch (e) {
+        console.error("Error al cargar filtros:", e);
+      }
+    }
+
+    function actualizarFiltroUsuariosPorArea() {
+      const selectTablaUsr = document.getElementById('filtro-tabla-usuario');
+      if (!selectTablaUsr) return;
+      selectTablaUsr.innerHTML = `<option value="todos">-- Todos los Colaboradores --</option>`;
+
+      let subset = [];
+      if (usuarioActual.rol === 'supervisor') {
+        const areaIdSup = obtenerAreaIdActualSupervisor();
+        subset = usuariosLista.filter(u => Number(u.area_id) === areaIdSup && u.rol === 'usuario');
+      } else if (usuarioActual.rol === 'admin') {
+        const areaFiltroVal = document.getElementById('filtro-tabla-area')?.value;
+        if (areaFiltroVal && areaFiltroVal !== 'todos') {
+          subset = usuariosLista.filter(u => Number(u.area_id) === Number(areaFiltroVal) && u.rol === 'usuario');
+        } else {
+          subset = usuariosLista.filter(u => u.rol === 'usuario');
+        }
+      } else {
+        subset = usuariosLista.filter(u => u.usuario === usuarioActual.usuario);
+      }
+
+      subset.forEach(u => {
+        selectTablaUsr.innerHTML += `<option value="${u.usuario}">${u.nombres} ${u.apellidos}</option>`;
+      });
+      cargarRegistros();
+    }
+
+    function actualizarPdfUsuariosPorArea() {
+      const containerPdfUsr = document.getElementById('pdf-filtro-usuario-container');
+      if (!containerPdfUsr) return;
+      const areaPdfVal = usuarioActual.rol === 'supervisor' ? obtenerAreaIdActualSupervisor() : document.getElementById('pdf-area')?.value;
+
+      let subset = [];
+      if (usuarioActual.rol === 'supervisor') {
+        const areaIdSup = obtenerAreaIdActualSupervisor();
+        subset = usuariosLista.filter(u => u.rol === 'usuario' && Number(u.area_id) === areaIdSup);
+      } else if (usuarioActual.rol === 'admin') {
+        if (areaPdfVal && areaPdfVal !== 'todos') {
+          subset = usuariosLista.filter(u => u.rol === 'usuario' && Number(u.area_id) === Number(areaPdfVal));
+        } else {
+          subset = usuariosLista.filter(u => u.rol === 'usuario');
+        }
+      } else {
+        subset = usuariosLista.filter(u => u.usuario === usuarioActual.usuario);
+      }
+
+      let selectPdfHtml = `<select id="pdf-usuario" style="margin-right: 8px;"><option value="todos">-- Todos --</option>`;
+      subset.forEach(u => {
+        selectPdfHtml += `<option value="${u.usuario}">${u.nombres} ${u.apellidos}</option>`;
+      });
+      selectPdfHtml += `</select>`;
+      containerPdfUsr.innerHTML = selectPdfHtml;
+    }
+
+    document.getElementById('user-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('user-id-db').value;
+
+      const checkboxes = document.querySelectorAll('input[name="usr_turnos"]:checked');
+      const turnosSeleccionados = Array.from(checkboxes).map(cb => Number(cb.value));
+
+      let rol = document.getElementById('usr-rol').value;
+      let areaId = document.getElementById('usr-area').value ? Number(document.getElementById('usr-area').value) : null;
+
+      if (usuarioActual.rol === 'supervisor') {
+        rol = 'usuario';
+        areaId = obtenerAreaIdActualSupervisor();
+      }
+
+      if (rol === 'admin') {
+        areaId = null;
+      }
+
+      const data = {
+        dni: document.getElementById('usr-dni').value,
+        nombres: document.getElementById('usr-nombres').value,
+        apellidos: document.getElementById('usr-apellidos').value,
+        usuario: document.getElementById('usr-usuario').value,
+        password: document.getElementById('usr-password').value,
+        rol: rol,
+        area_id: areaId,
+        turnos_asignados_ids: rol === 'admin' ? [] : turnosSeleccionados
+      };
+
+      let res;
+      if (id) {
+        res = await fetch(`/usuarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        res = await fetch('/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+
+      if (res.ok) {
+        cancelarEdicionUsuario();
+        cargarUsuarios();
+        cargarFiltrosAreaYUsuarios();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Error al guardar usuario");
+      }
+    });
+
+    function editarUsuario(id) {
+      const u = usuariosLista.find(item => Number(item.id) === Number(id));
+      if (!u) return;
+
+      document.getElementById('user-id-db').value = u.id;
+      document.getElementById('usr-dni').value = u.dni;
+      document.getElementById('usr-nombres').value = u.nombres;
+      document.getElementById('usr-apellidos').value = u.apellidos;
+      document.getElementById('usr-usuario').value = u.usuario;
+      document.getElementById('usr-password').value = u.password;
+      
+      document.getElementById('usr-password').disabled = false;
+
+      document.getElementById('usr-rol').value = u.rol;
+      document.getElementById('usr-area').value = u.area_id !== null && u.area_id !== undefined ? u.area_id : '';
+
+      const checkboxes = document.querySelectorAll('input[name="usr_turnos"]');
+      const idsAsignados = u.turnos_asignados_ids || [];
+      checkboxes.forEach(cb => {
+        cb.checked = idsAsignados.includes(Number(cb.value));
+      });
+
+      document.getElementById('btn-submit-user').innerText = "Actualizar Colaborador";
+      document.getElementById('btn-cancel-user').classList.remove('hidden');
+    }
+
+    function cancelarEdicionUsuario() {
+      document.getElementById('user-form').reset();
+      document.getElementById('user-id-db').value = '';
+      document.getElementById('usr-password').disabled = false;
+      const checkboxes = document.querySelectorAll('input[name="usr_turnos"]');
+      checkboxes.forEach(cb => cb.checked = false);
+      document.getElementById('btn-submit-user').innerText = "Guardar Colaborador";
+      document.getElementById('btn-cancel-user').classList.add('hidden');
+    }
+
+    async function eliminarUsuario(id) {
+      if (confirm("¿Seguro que deseas eliminar este usuario?")) {
+        await fetch(`/usuarios/${id}`, { method: 'DELETE' });
+        cargarUsuarios();
+        cargarFiltrosAreaYUsuarios();
+      }
+    }
+
+    const fechaInput = document.getElementById('fecha');
+    if (fechaInput) {
+      fechaInput.addEventListener('change', actualizarHorarioRotativoYCalcular);
+    }
+    const extraDesdeInput = document.getElementById('extra_desde');
+    if (extraDesdeInput) {
+      extraDesdeInput.addEventListener('input', validarYCalcularAuto);
+    }
+    const extraHastaInput = document.getElementById('extra_hasta');
+    if (extraHastaInput) {
+      extraHastaInput.addEventListener('input', validarYCalcularAuto);
+    }
+
+    function timeToMinutes(timeStr) {
+      if (!timeStr) return null;
+      const parts = timeStr.split(':').map(Number);
+      if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+      return parts[0] * 60 + parts[1];
+    }
+
+    function parsearMinutosHora(horaStr) {
+      const [h, m] = horaStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function formatearFechaVisual(fechaIso) {
+      if (!fechaIso) return '';
+      const [yyyy, mm, dd] = fechaIso.split('-');
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function obtenerInfoHorarioRotativo(fechaStr) {
+      try {
+        if (!fechaStr || !usuarioActual) return { texto: 'Sin asignar', inicioMin: 0, finMin: 0, esLibre: true };
+        const fechaActual = new Date(fechaStr + 'T00:00:00');
+        const diaIndex = fechaActual.getDay();
+        const esSabado = diaIndex === 6;
+        const esDomingo = diaIndex === 0;
+
+        if (esDomingo) {
+          return { texto: 'Libre (Dom)', inicioMin: 0, finMin: 0, esLibre: true };
+        }
+
+        const idsAsignados = usuarioActual.turnos_asignados_ids || [];
+        const turnosUsuario = turnosConfigList.filter(t => idsAsignados.includes(t.id));
+
+        if (turnosUsuario.length === 0) {
+          return { texto: 'Sin asignar', inicioMin: 0, finMin: 0, esLibre: true };
+        }
+
+        const turnosOrdenados = [...turnosUsuario].sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+        const turnoBase = turnosOrdenados[0];
+        const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
+
+        const diffTime = fechaActual.getTime() - fechaBase.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffWeeks = Math.floor(diffDays / 7);
+
+        const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
+        const turnoEncontrado = turnosOrdenados[indexTurno] || turnosOrdenados[0];
+
+        const horaStr = esSabado ? turnoEncontrado.sabado : turnoEncontrado.lunes_viernes;
+        const partes = horaStr.split('-');
+        return { 
+          texto: horaStr, 
+          inicioMin: parsearMinutosHora(partes[0].trim()), 
+          finMin: parsearMinutosHora(partes[1].trim()), 
+          esLibre: false 
+        };
+      } catch {
+        return { texto: 'Sin asignar', inicioMin: 0, finMin: 0, esLibre: true };
+      }
+    }
+
+    function actualizarHorarioRotativoYCalcular() {
+      const fechaEl = document.getElementById('fecha');
+      const horarioTextEl = document.getElementById('horario_rotativo_text');
+      if (!fechaEl || !horarioTextEl) return;
+      const fechaVal = fechaEl.value;
+      const info = obtenerInfoHorarioRotativo(fechaVal);
+      horarioTextEl.value = info.texto;
+      validarYCalcularAuto();
+    }
+
+    function validarYCalcularAuto() {
+      const fechaEl = document.getElementById('fecha');
+      const ingEl = document.getElementById('extra_desde');
+      const salEl = document.getElementById('extra_hasta');
+      const horasExtEl = document.getElementById('horas_extras');
+      const tipoReg = document.getElementById('tipo_registro').value;
+      if (!fechaEl || !ingEl || !salEl || !horasExtEl) return;
+
+      const fechaVal = fechaEl.value;
+      const ing = ingEl.value;
+      const sal = salEl.value;
+
+      const minIng = timeToMinutes(ing);
+      let minSal = timeToMinutes(sal);
+
+      if (minIng === null || minSal === null || !fechaVal) {
+        horasExtEl.value = "00:00";
+        return;
+      }
+
+      if (minSal < minIng) minSal += 24 * 60;
+
+      const info = obtenerInfoHorarioRotativo(fechaVal);
+
+      if (tipoReg === 'extra' && !info.esLibre) {
+        if (
+          (minIng >= info.inicioMin && minIng < info.finMin) ||
+          (minSal > info.inicioMin && minSal <= info.finMin) ||
+          (minIng <= info.inicioMin && minSal >= info.finMin)
+        ) {
+          horasExtEl.value = "DENTRO DE HORARIO";
+          return;
+        }
+      }
+
+      let totalMinutosExtra = minSal - minIng;
+      if (tipoReg === 'feriado' && totalMinutosExtra >= 480) {
+        totalMinutosExtra -= 45;
+      }
+
+      const eh = Math.floor(totalMinutosExtra / 60);
+      const em = totalMinutosExtra % 60;
+
+      horasExtEl.value = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+    }
+
+    async function cargarRegistros() {
+      try {
+        const res = await fetch('/records');
+        registrosCargados = await res.json();
+        
+        let filtrados = registrosCargados;
+        if (usuarioActual.rol === 'usuario') {
+          filtrados = registrosCargados.filter(r => r.usuario === usuarioActual.usuario);
+        } else if (usuarioActual.rol === 'supervisor') {
+          const areaIdSup = obtenerAreaIdActualSupervisor();
+          const subUsrs = usuariosLista.filter(u => Number(u.area_id) === areaIdSup).map(u => u.usuario);
+          filtrados = registrosCargados.filter(r => subUsrs.includes(r.usuario));
+          const filtroSel = document.getElementById('filtro-tabla-usuario');
+          if (filtroSel && filtroSel.value && filtroSel.value !== 'todos') {
+            filtrados = filtrados.filter(r => r.usuario === filtroSel.value);
+          }
+        } else {
+          const filtroAreaVal = document.getElementById('filtro-tabla-area').value;
+          if (filtroAreaVal && filtroAreaVal !== 'todos') {
+            const subUsrs = usuariosLista.filter(u => Number(u.area_id) === Number(filtroAreaVal)).map(u => u.usuario);
+            filtrados = registrosCargados.filter(r => subUsrs.includes(r.usuario));
+          }
+          const filtroSel = document.getElementById('filtro-tabla-usuario');
+          if (filtroSel && filtroSel.value && filtroSel.value !== 'todos') {
+            filtrados = filtrados.filter(r => r.usuario === filtroSel.value);
+          }
+        }
+
+        // Filtro de fechas en pantalla (Desde / Hasta)
+        const tablaDesde = document.getElementById('tabla-desde').value;
+        const tablaHasta = document.getElementById('tabla-hasta').value;
+        if (tablaDesde) filtrados = filtrados.filter(r => r.fecha >= tablaDesde);
+        if (tablaHasta) filtrados = filtrados.filter(r => r.fecha <= tablaHasta);
+
+        const tbody = document.getElementById('records-table');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        let totalMinutos = 0;
+
+        filtrados.forEach(r => {
+          const [h, m] = r.horas_extras.split(':').map(Number);
+          const minutosReg = h * 60 + m;
+
+          let tipoBadge = '';
+          let valDisplay = '';
+
+          if (r.tipo_registro === 'papeleta') {
+            tipoBadge = `<span class="badge badge-papeleta">Papeleta</span>`;
+            valDisplay = `<span style="color: var(--amber); font-weight: bold;">${r.horas_extras}</span>`;
+          } else if (r.tipo_registro === 'feriado') {
+            totalMinutos += minutosReg;
+            tipoBadge = `<span class="badge badge-feriado">Feriado</span>`;
+            valDisplay = `<span style="color: #818cf8; font-weight: bold;">+${r.horas_extras}</span>`;
+          } else {
+            totalMinutos += minutosReg;
+            tipoBadge = `<span class="badge badge-extra">Hora Extra</span>`;
+            valDisplay = `<span style="color: var(--emerald); font-weight: bold;">+${r.horas_extras}</span>`;
+          }
+
+          const nombreColabTd = usuarioActual.rol !== 'usuario' ? `<td style="font-weight: 500; color: #38bdf8;">${r.nombres_apellidos || r.usuario}</td>` : '';
+
+          let botonesAcciones = '-';
+          if (usuarioActual.rol === 'usuario' && r.usuario === usuarioActual.usuario) {
+            botonesAcciones = `
+              <div class="actions">
+                <button onclick="editarRegistro(${r.id})" class="btn-action btn-edit" title="Editar">✏️</button>
+                <button onclick="eliminarRegistro(${r.id})" class="btn-action btn-delete" title="Eliminar">🗑️</button>
+              </div>
+            `;
+          }
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            ${nombreColabTd}
+            <td style="font-weight: 600; color: #a5b4fc;">${r.horario_rotativo}</td>
+            <td style="font-weight: 500; color: #f1f5f9;">${formatearFechaVisual(r.fecha)}</td>
+            <td>${r.extra_desde}</td>
+            <td>${r.extra_hasta}</td>
+            <td>${valDisplay}</td>
+            <td>${tipoBadge}</td>
+            <td style="color: var(--text-muted);">${r.notas || '-'}</td>
+            <td style="text-align: center;">${botonesAcciones}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        document.getElementById('row-counter-display').innerText = `Mostrando ${filtrados.length} registros`;
+
+        const hrs = Math.floor(totalMinutos / 60);
+        const mins = totalMinutos % 60;
+        const totalHorasEl = document.getElementById('total-horas');
+        if (totalHorasEl) {
+          totalHorasEl.innerText = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')} hrs`;
+        }
+      } catch (e) {
+        console.error("Error al cargar registros:", e);
+      }
+    }
+
+    const overtimeForm = document.getElementById('overtime-form');
+    if (overtimeForm) {
+      overtimeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const extraVal = document.getElementById('horas_extras').value;
+        if (extraVal === "DENTRO DE HORARIO") {
+          alert("No puedes registrar horas dentro de tu jornada regular a menos que sea Feriado.");
+          return;
+        }
+
+        const recordId = document.getElementById('record-id').value;
+        const tipoReg = document.getElementById('tipo_registro').value;
+
+        const recordData = {
+          fecha: document.getElementById('fecha').value,
+          horario_rotativo: document.getElementById('horario_rotativo_text').value,
+          extra_desde: document.getElementById('extra_desde').value,
+          extra_hasta: document.getElementById('extra_hasta').value,
+          horas_extras: extraVal,
+          tipo_registro: tipoReg,
+          notas: document.getElementById('notas').value,
+          usuario: usuarioActual.usuario
+        };
+
+        let response;
+        if (recordId) {
+          response = await fetch(`/records/${recordId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(recordData)
+          });
+        } else {
+          response = await fetch('/records', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(recordData)
+          });
+        }
+
+        if (!response.ok) {
+          const errData = await response.json();
+          alert(errData.error || "Error al guardar el registro.");
+          return;
+        }
+
+        cancelarEdicion();
+        cargarRegistros();
+      });
+    }
+
+    function editarRegistro(id) {
+      const reg = registrosCargados.find(r => r.id === id);
+      if (!reg) return;
+
+      document.getElementById('record-id').value = reg.id;
+      document.getElementById('fecha').value = reg.fecha;
+      document.getElementById('horario_rotativo_text').value = reg.horario_rotativo;
+      document.getElementById('extra_desde').value = reg.extra_desde;
+      document.getElementById('extra_hasta').value = reg.extra_hasta;
+      document.getElementById('horas_extras').value = reg.horas_extras;
+      document.getElementById('tipo_registro').value = reg.tipo_registro || 'extra';
+      document.getElementById('notas').value = reg.notas || '';
+
+      document.getElementById('form-title').innerText = "✏️ Editar Registro";
+      document.getElementById('btn-submit').innerText = "Actualizar Registro";
+      document.getElementById('btn-cancel').classList.remove('hidden');
+    }
+
+    function cancelarEdicion() {
+      document.getElementById('overtime-form').reset();
+      document.getElementById('record-id').value = '';
+      document.getElementById('horario_rotativo_text').value = '';
+      document.getElementById('horas_extras').value = '00:00';
+      document.getElementById('tipo_registro').value = 'extra';
+      document.getElementById('form-title').innerText = "➕ Registrar Horas Extras / Feriado / Papeleta";
+      document.getElementById('btn-submit').innerText = "Guardar Registro";
+      document.getElementById('btn-cancel').classList.add('hidden');
+    }
+
+    async function eliminarRegistro(id) {
+      if (confirm("¿Estás seguro de eliminar este registro?")) {
+        await fetch(`/records/${id}`, { method: 'DELETE' });
+        cargarRegistros();
+      }
+    }
+
+    function exportarPDF() {
+      const desde = document.getElementById('pdf-desde').value;
+      const hasta = document.getElementById('pdf-hasta').value;
+      let usuarioFiltro = 'todos';
+      let areaFiltro = 'todos';
+      
+      const selectPdfUsr = document.getElementById('pdf-usuario');
+      if (selectPdfUsr) {
+        usuarioFiltro = selectPdfUsr.value;
+      }
+      const selectPdfArea = document.getElementById('pdf-area');
+      if (selectPdfArea) {
+        areaFiltro = selectPdfArea.value;
+      }
+
+      let url = `/pdf?sesion_usuario=${usuarioActual.usuario}&sesion_rol=${usuarioActual.rol}&usuario=${usuarioFiltro}&area=${areaFiltro}&`;
+      if (usuarioActual.rol === 'supervisor') {
+        url += `supervisor_usuario=${usuarioActual.usuario}&`;
+      }
+      if (desde) url += `desde=${desde}&`;
+      if (hasta) url += `hasta=${hasta}`;
+      window.open(url, '_blank');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "gestor-horas-extras",
+  "version": "1.0.0",
+  "private": true,
+  "module": "server.ts",
+  "scripts": {
+    "start": "bun run server.ts"
+  },
+  "dependencies": {
+    "fastify": "^4.26.0",
+    "postgres": "^3.4.3"
+  }
+}
