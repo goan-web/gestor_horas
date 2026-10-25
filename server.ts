@@ -121,7 +121,6 @@ function parsearMinutosHora(horaStr: string): number {
   return h * 60 + m;
 }
 
-// Convertir cualquier valor de fecha (Date u objeto/cadena de Postgres) a YYYY-MM-DD
 function normalizarFechaCadena(val: any): string {
   if (!val) return '';
   if (val instanceof Date) {
