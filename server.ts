@@ -121,16 +121,33 @@ function parsearMinutosHora(horaStr: string): number {
   return h * 60 + m;
 }
 
+// Convertir cualquier valor de fecha (Date u objeto/cadena de Postgres) a YYYY-MM-DD
+function normalizarFechaCadena(val: any): string {
+  if (!val) return '';
+  if (val instanceof Date) {
+    const year = val.getFullYear();
+    const month = String(val.getMonth() + 1).padStart(2, '0');
+    const day = String(val.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  const str = String(val);
+  if (str.includes('T')) {
+    return str.split('T')[0];
+  }
+  return str;
+}
+
 function formatearFechaVisual(fechaIso: string): string {
-  if (!fechaIso) return '';
-  const fechaStr = typeof fechaIso === 'string' ? fechaIso.split('T')[0] : new Date(fechaIso).toISOString().split('T')[0];
-  const [yyyy, mm, dd] = fechaStr.split('-');
+  const fechaLimpia = normalizarFechaCadena(fechaIso);
+  if (!fechaLimpia) return '';
+  const [yyyy, mm, dd] = fechaLimpia.split('-');
   return `${dd}/${mm}/${yyyy}`;
 }
 
 async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaStr: string) {
   try {
-    const fechaActual = new Date(fechaStr + 'T00:00:00');
+    const fechaLimpia = normalizarFechaCadena(fechaStr);
+    const fechaActual = new Date(fechaLimpia + 'T00:00:00');
     const diaIndex = fechaActual.getDay();
     const esSabado = diaIndex === 6;
     const esDomingo = diaIndex === 0;
@@ -142,8 +159,8 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
     const rawTurnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos`;
     const turnosConfigDb = rawTurnos.map(t => ({
       ...t,
-      fecha_inicio: t.fecha_inicio.toString().split('T')[0],
-      fecha_fin: t.fecha_fin.toString().split('T')[0]
+      fecha_inicio: normalizarFechaCadena(t.fecha_inicio),
+      fecha_fin: normalizarFechaCadena(t.fecha_fin)
     }));
 
     const turnosUsuario = turnosConfigDb.filter(t => userObj.turnos_asignados_ids?.includes(t.id));
@@ -292,8 +309,8 @@ fastify.get('/turnos', async () => {
   const turnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos ORDER BY fecha_inicio ASC`;
   return turnos.map(t => ({
     ...t,
-    fecha_inicio: t.fecha_inicio.toString().split('T')[0],
-    fecha_fin: t.fecha_fin.toString().split('T')[0]
+    fecha_inicio: normalizarFechaCadena(t.fecha_inicio),
+    fecha_fin: normalizarFechaCadena(t.fecha_fin)
   }));
 });
 
@@ -307,8 +324,8 @@ fastify.post<{ Body: Omit<HorarioSemanaConfig, 'id'> }>('/turnos', async (reques
   const nuevo = result[0];
   return {
     ...nuevo,
-    fecha_inicio: nuevo.fecha_inicio.toString().split('T')[0],
-    fecha_fin: nuevo.fecha_fin.toString().split('T')[0]
+    fecha_inicio: normalizarFechaCadena(nuevo.fecha_inicio),
+    fecha_fin: normalizarFechaCadena(nuevo.fecha_fin)
   };
 });
 
@@ -328,8 +345,8 @@ fastify.put<{ Params: { id: string }, Body: HorarioSemanaConfig }>('/turnos/:id'
   const actualizado = result[0];
   return {
     ...actualizado,
-    fecha_inicio: actualizado.fecha_inicio.toString().split('T')[0],
-    fecha_fin: actualizado.fecha_fin.toString().split('T')[0]
+    fecha_inicio: normalizarFechaCadena(actualizado.fecha_inicio),
+    fecha_fin: normalizarFechaCadena(actualizado.fecha_fin)
   };
 });
 
@@ -342,7 +359,7 @@ fastify.delete<{ Params: { id: string } }>('/turnos/:id', async (request) => {
 // Registros
 fastify.get('/records', async () => {
   const records = await sql<OvertimeRecord[]>`SELECT * FROM records ORDER BY fecha ASC`;
-  return records.map(r => ({ ...r, fecha: r.fecha.toString().split('T')[0] }));
+  return records.map(r => ({ ...r, fecha: normalizarFechaCadena(r.fecha) }));
 });
 
 fastify.post<{ Body: Omit<OvertimeRecord, 'id'> }>('/records', async (request, reply) => {
@@ -390,7 +407,7 @@ fastify.post<{ Body: Omit<OvertimeRecord, 'id'> }>('/records', async (request, r
     RETURNING *
   `;
   const nuevo = result[0];
-  return { ...nuevo, fecha: nuevo.fecha.toString().split('T')[0] };
+  return { ...nuevo, fecha: normalizarFechaCadena(nuevo.fecha) };
 });
 
 fastify.put<{ Params: { id: string }, Body: OvertimeRecord }>('/records/:id', async (request, reply) => {
@@ -442,7 +459,7 @@ fastify.put<{ Params: { id: string }, Body: OvertimeRecord }>('/records/:id', as
     return { error: "Registro no encontrado" };
   }
   const actualizado = result[0];
-  return { ...actualizado, fecha: actualizado.fecha.toString().split('T')[0] };
+  return { ...actualizado, fecha: normalizarFechaCadena(actualizado.fecha) };
 });
 
 fastify.delete<{ Params: { id: string } }>('/records/:id', async (request) => {
@@ -459,7 +476,7 @@ fastify.get<{ Querystring: { desde?: string; hasta?: string; usuario?: string; a
   const usuariosDb = await sql<UserRecord[]>`SELECT * FROM usuarios`;
   const areasDb = await sql<AreaRecord[]>`SELECT * FROM areas`;
   
-  let filtered = rawRecords.map(r => ({ ...r, fecha: r.fecha.toString().split('T')[0] }));
+  let filtered = rawRecords.map(r => ({ ...r, fecha: normalizarFechaCadena(r.fecha) }));
 
   if (sesion_rol === 'usuario' && sesion_usuario) {
     filtered = filtered.filter(r => r.usuario === sesion_usuario);
