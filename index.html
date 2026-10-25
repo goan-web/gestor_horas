@@ -375,7 +375,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
         <h2 style="margin-bottom:0;">📋 Histórico de Registros</h2>
         
-        <!-- Filtros de tabla en pantalla (Área, Colaborador, Rango de Fechas) -->
+        <!-- Filtros adicionales de tabla en pantalla (Área, Colaborador, Rango de Fechas) -->
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <div id="admin-filtro-tabla-container" class="hidden" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <div id="filtro-area-wrapper" class="hidden">
@@ -1061,25 +1061,15 @@
         }
 
         const turnosOrdenados = [...turnosUsuario].sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
-        
-        let turnoEncontrado = null;
-        for (let i = 0; i < turnosOrdenados.length; i++) {
-          const t = turnosOrdenados[i];
-          if (fechaStr >= t.fecha_inicio && fechaStr <= t.fecha_fin) {
-            turnoEncontrado = t;
-            break;
-          }
-        }
+        const turnoBase = turnosOrdenados[0];
+        const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
 
-        if (!turnoEncontrado) {
-          const turnoBase = turnosOrdenados[0];
-          const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
-          const diffTime = fechaActual.getTime() - fechaBase.getTime();
-          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          const diffWeeks = Math.floor(diffDays / 7);
-          const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
-          turnoEncontrado = turnosOrdenados[indexTurno];
-        }
+        const diffTime = fechaActual.getTime() - fechaBase.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffWeeks = Math.floor(diffDays / 7);
+
+        const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
+        const turnoEncontrado = turnosOrdenados[indexTurno] || turnosOrdenados[0];
 
         const horaStr = esSabado ? turnoEncontrado.sabado : turnoEncontrado.lunes_viernes;
         const partes = horaStr.split('-');
@@ -1178,6 +1168,7 @@
           }
         }
 
+        // Filtro de fechas en pantalla (Desde / Hasta)
         const tablaDesde = document.getElementById('tabla-desde').value;
         const tablaHasta = document.getElementById('tabla-hasta').value;
         if (tablaDesde) filtrados = filtrados.filter(r => r.fecha >= tablaDesde);

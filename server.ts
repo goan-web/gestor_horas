@@ -139,7 +139,7 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
       return { texto: 'Libre (Dom)', inicioMin: 0, finMin: 0, esLibre: true };
     }
 
-    const rawTurnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos ORDER BY fecha_inicio ASC`;
+    const rawTurnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos`;
     const turnosConfigDb = rawTurnos.map(t => ({
       ...t,
       fecha_inicio: t.fecha_inicio.toString().split('T')[0],
@@ -153,25 +153,15 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
     }
 
     const turnosOrdenados = [...turnosUsuario].sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
-    
-    let turnoEncontrado = null;
-    for (let i = 0; i < turnosOrdenados.length; i++) {
-      const t = turnosOrdenados[i];
-      if (fechaStr >= t.fecha_inicio && fechaStr <= t.fecha_fin) {
-        turnoEncontrado = t;
-        break;
-      }
-    }
+    const turnoBase = turnosOrdenados[0];
+    const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
 
-    if (!turnoEncontrado) {
-      const turnoBase = turnosOrdenados[0];
-      const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
-      const diffTime = fechaActual.getTime() - fechaBase.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const diffWeeks = Math.floor(diffDays / 7);
-      const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
-      turnoEncontrado = turnosOrdenados[indexTurno];
-    }
+    const diffTime = fechaActual.getTime() - fechaBase.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffWeeks = Math.floor(diffDays / 7);
+
+    const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
+    const turnoEncontrado = turnosOrdenados[indexTurno] || turnosOrdenados[0];
 
     const horaStr = esSabado ? turnoEncontrado.sabado : turnoEncontrado.lunes_viernes;
     const partes = horaStr.split('-');
@@ -179,8 +169,7 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
     const finMin = parsearMinutosHora(partes[1].trim());
 
     return { texto: horaStr, inicioMin, finMin, esLibre: false };
-  } catch (err) {
-    console.error("Error calculando horario rotativo:", err);
+  } catch {
     return { texto: 'Sin asignar', inicioMin: 0, finMin: 0, esLibre: true };
   }
 }
