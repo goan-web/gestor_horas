@@ -5,7 +5,6 @@ import postgres from 'postgres';
 
 const fastify = Fastify({ logger: true });
 
-// Configuración de la conexión a PostgreSQL (usa la variable de entorno DATABASE_URL de Render o una local por defecto)
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/gestor_horas';
 const sql = postgres(connectionString);
 
@@ -49,7 +48,6 @@ interface OvertimeRecord {
   notas?: string;
 }
 
-// Inicialización de Tablas en PostgreSQL
 async function inicializarBaseDatos() {
   try {
     await sql`
@@ -100,7 +98,6 @@ async function inicializarBaseDatos() {
       );
     `;
 
-    // Insertar Admin por defecto si no existe
     const adminCheck = await sql`SELECT * FROM usuarios WHERE usuario = 'admin'`;
     if (adminCheck.length === 0) {
       await sql`
@@ -142,7 +139,13 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
       return { texto: 'Libre (Dom)', inicioMin: 0, finMin: 0, esLibre: true };
     }
 
-    const turnosConfigDb = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos`;
+    const rawTurnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos ORDER BY fecha_inicio ASC`;
+    const turnosConfigDb = rawTurnos.map(t => ({
+      ...t,
+      fecha_inicio: t.fecha_inicio.toString().split('T')[0],
+      fecha_fin: t.fecha_fin.toString().split('T')[0]
+    }));
+
     const turnosUsuario = turnosConfigDb.filter(t => userObj.turnos_asignados_ids?.includes(t.id));
 
     if (!turnosUsuario || turnosUsuario.length === 0) {
@@ -150,15 +153,25 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
     }
 
     const turnosOrdenados = [...turnosUsuario].sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
-    const turnoBase = turnosOrdenados[0];
-    const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
+    
+    let turnoEncontrado = null;
+    for (let i = 0; i < turnosOrdenados.length; i++) {
+      const t = turnosOrdenados[i];
+      if (fechaStr >= t.fecha_inicio && fechaStr <= t.fecha_fin) {
+        turnoEncontrado = t;
+        break;
+      }
+    }
 
-    const diffTime = fechaActual.getTime() - fechaBase.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffWeeks = Math.floor(diffDays / 7);
-
-    const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
-    const turnoEncontrado = turnosOrdenados[indexTurno] || turnosOrdenados[0];
+    if (!turnoEncontrado) {
+      const turnoBase = turnosOrdenados[0];
+      const fechaBase = new Date(turnoBase.fecha_inicio + 'T00:00:00');
+      const diffTime = fechaActual.getTime() - fechaBase.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffWeeks = Math.floor(diffDays / 7);
+      const indexTurno = Math.abs(diffWeeks) % turnosOrdenados.length;
+      turnoEncontrado = turnosOrdenados[indexTurno];
+    }
 
     const horaStr = esSabado ? turnoEncontrado.sabado : turnoEncontrado.lunes_viernes;
     const partes = horaStr.split('-');
@@ -166,7 +179,8 @@ async function obtenerDetalleHorarioRotativoUsuario(userObj: UserRecord, fechaSt
     const finMin = parsearMinutosHora(partes[1].trim());
 
     return { texto: horaStr, inicioMin, finMin, esLibre: false };
-  } catch {
+  } catch (err) {
+    console.error("Error calculando horario rotativo:", err);
     return { texto: 'Sin asignar', inicioMin: 0, finMin: 0, esLibre: true };
   }
 }
@@ -286,7 +300,12 @@ fastify.delete<{ Params: { id: string } }>('/usuarios/:id', async (request) => {
 
 // Turnos
 fastify.get('/turnos', async () => {
-  return await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos ORDER BY fecha_inicio ASC`;
+  const turnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos ORDER BY fecha_inicio ASC`;
+  return turnos.map(t => ({
+    ...t,
+    fecha_inicio: t.fecha_inicio.toString().split('T')[0],
+    fecha_fin: t.fecha_fin.toString().split('T')[0]
+  }));
 });
 
 fastify.post<{ Body: Omit<HorarioSemanaConfig, 'id'> }>('/turnos', async (request) => {
@@ -296,7 +315,12 @@ fastify.post<{ Body: Omit<HorarioSemanaConfig, 'id'> }>('/turnos', async (reques
     VALUES (${data.nombre_turno}, ${data.fecha_inicio}, ${data.fecha_fin}, ${data.lunes_viernes}, ${data.sabado})
     RETURNING *
   `;
-  return result[0];
+  const nuevo = result[0];
+  return {
+    ...nuevo,
+    fecha_inicio: nuevo.fecha_inicio.toString().split('T')[0],
+    fecha_fin: nuevo.fecha_fin.toString().split('T')[0]
+  };
 });
 
 fastify.put<{ Params: { id: string }, Body: HorarioSemanaConfig }>('/turnos/:id', async (request, reply) => {
@@ -312,7 +336,12 @@ fastify.put<{ Params: { id: string }, Body: HorarioSemanaConfig }>('/turnos/:id'
     reply.code(404);
     return { error: "Turno no encontrado" };
   }
-  return result[0];
+  const actualizado = result[0];
+  return {
+    ...actualizado,
+    fecha_inicio: actualizado.fecha_inicio.toString().split('T')[0],
+    fecha_fin: actualizado.fecha_fin.toString().split('T')[0]
+  };
 });
 
 fastify.delete<{ Params: { id: string } }>('/turnos/:id', async (request) => {
@@ -324,7 +353,7 @@ fastify.delete<{ Params: { id: string } }>('/turnos/:id', async (request) => {
 // Registros
 fastify.get('/records', async () => {
   const records = await sql<OvertimeRecord[]>`SELECT * FROM records ORDER BY fecha ASC`;
-  return records.map(r => ({ ...r, fecha: typeof r.fecha === 'string' ? r.fecha.split('T')[0] : new Date(r.fecha).toISOString().split('T')[0] }));
+  return records.map(r => ({ ...r, fecha: r.fecha.toString().split('T')[0] }));
 });
 
 fastify.post<{ Body: Omit<OvertimeRecord, 'id'> }>('/records', async (request, reply) => {
@@ -433,7 +462,7 @@ fastify.delete<{ Params: { id: string } }>('/records/:id', async (request) => {
   return { message: "Registro eliminado" };
 });
 
-// PDF con restricciones estrictas por rol y sesión de usuario
+// PDF
 fastify.get<{ Querystring: { desde?: string; hasta?: string; usuario?: string; area?: string; supervisor_usuario?: string; sesion_usuario?: string; sesion_rol?: string } }>('/pdf', async (request, reply) => {
   const { desde, hasta, usuario, area, supervisor_usuario, sesion_usuario, sesion_rol } = request.query;
   
@@ -598,7 +627,6 @@ fastify.get('/', async (_request, reply) => {
   reply.type('text/html').send(html);
 });
 
-// Configuración del puerto compatible con Render y local (8000)
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8000;
 
 const start = async () => {
