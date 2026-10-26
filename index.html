@@ -458,8 +458,14 @@
         </form>
       </div>
 
-      <!-- TABLA DE LISTA DE COLABORADORES -->
-      <h2 id="list-section-title" style="margin-top: 25px;">👥 Lista de Colaboradores</h2>
+      <!-- TABLA DE LISTA DE COLABORADORES CON BOTÓN DE IMPRESIÓN -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+        <h2 id="list-section-title" style="margin-bottom:0;">👥 Lista de Colaboradores</h2>
+        <button onclick="imprimirListaColaboradores()" class="btn-success" style="padding: 6px 12px; font-size: 0.8rem;">
+          🖨️ Imprimir Lista de Colaboradores
+        </button>
+      </div>
+
       <div class="table-container-6-lines">
         <table>
           <thead>
@@ -725,7 +731,6 @@
           document.getElementById('config-turno-inicio').value = '';
           document.getElementById('config-turno-fin').value = '';
           
-          // Refrescar checkboxes de configuración manteniendo los ya seleccionados + el nuevo
           const asignadosActuales = Array.from(document.querySelectorAll('input[name="config_turnos"]:checked')).map(cb => Number(cb.value));
           asignadosActuales.push(creado.id);
           poblarCheckboxesConfiguracion(asignadosActuales);
@@ -741,8 +746,6 @@
       const container = document.getElementById('config-turnos-checkboxes');
       container.innerHTML = '';
       
-      // Mostrar ÚNICAMENTE los turnos asignados al usuario o recién creados por él en esta sesión de config, 
-      // para evitar mostrar turnos masivos de otros usuarios.
       const turnosPermitidos = turnosConfigList.filter(t => asignadosIds.includes(t.id) || turnosTemporalesConfig.includes(t));
 
       if (turnosPermitidos.length === 0) {
@@ -885,7 +888,7 @@
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
           document.getElementById('btn-config-user').classList.remove('hidden');
-        } else { // Usuario regular
+        } else {
           document.getElementById('admin-panel-section').classList.add('hidden');
           document.getElementById('overtime-section').classList.remove('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.add('hidden');
@@ -989,7 +992,6 @@
       }
     }
 
-    // Formulario Autorizar/Editar DNI por Supervisor
     const supervisorDniForm = document.getElementById('supervisor-dni-form');
     if (supervisorDniForm) {
       supervisorDniForm.addEventListener('submit', async (e) => {
@@ -1067,7 +1069,6 @@
       document.getElementById('btn-cancel-sup-dni').classList.add('hidden');
     }
 
-    // Gestión de Áreas
     async function cargarAreas() {
       try {
         const res = await fetch('/areas');
@@ -1473,6 +1474,14 @@
       });
       selectPdfHtml += `</select>`;
       containerPdfUsr.innerHTML = selectPdfHtml;
+    }
+
+    function imprimirListaColaboradores() {
+      let url = `/pdf-colaboradores?sesion_rol=${usuarioActual.rol}&`;
+      if (usuarioActual.rol === 'supervisor') {
+        url += `supervisor_usuario=${usuarioActual.usuario}`;
+      }
+      window.open(url, '_blank');
     }
 
     const userFormEl = document.getElementById('user-form');

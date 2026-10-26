@@ -541,7 +541,7 @@ fastify.delete<{ Params: { id: string } }>('/records/:id', async (request) => {
   return { message: "Registro eliminado" };
 });
 
-// PDF
+// PDF Reporte de Horas Extras
 fastify.get<{ Querystring: { desde?: string; hasta?: string; usuario?: string; area?: string; supervisor_usuario?: string; sesion_usuario?: string; sesion_rol?: string } }>('/pdf', async (request, reply) => {
   const { desde, hasta, usuario, area, supervisor_usuario, sesion_usuario, sesion_rol } = request.query;
   
@@ -691,6 +691,93 @@ fastify.get<{ Querystring: { desde?: string; hasta?: string; usuario?: string; a
     <body onload="window.print()">
       ${contenidoHtml || '<p>No hay registros para mostrar.</p>'}
       <div class="grand-total">TOTAL GENERAL ACUMULADO: ${String(granH).padStart(2, '0')}:${String(granM).padStart(2, '0')} hrs</div>
+      <br>
+      <button onclick="window.print()" style="padding: 8px 16px; background: #0f172a; color: #fff; border: none; cursor: pointer; border-radius: 4px;">🖨️ Imprimir / PDF</button>
+    </body>
+    </html>
+  `;
+
+  reply.type('text/html').send(htmlReport);
+});
+
+// PDF Impresión de Lista de Colaboradores
+fastify.get<{ Querystring: { supervisor_usuario?: string; sesion_rol?: string } }>('/pdf-colaboradores', async (request, reply) => {
+  const { supervisor_usuario, sesion_rol } = request.query;
+
+  const usuariosDb = await sql<UserRecord[]>`SELECT * FROM usuarios ORDER BY id ASC`;
+  const areasDb = await sql<AreaRecord[]>`SELECT * FROM areas`;
+  const rawTurnos = await sql<HorarioSemanaConfig[]>`SELECT * FROM turnos`;
+
+  let filtrados = usuariosDb;
+
+  if (sesion_rol === 'supervisor' && supervisor_usuario) {
+    const supObj = usuariosDb.find(u => u.usuario === supervisor_usuario && u.rol === 'supervisor');
+    if (supObj && supObj.area_id !== null && supObj.area_id !== undefined) {
+      const areaIdSup = Number(supObj.area_id);
+      filtrados = usuariosDb.filter(u => Number(u.area_id) === areaIdSup);
+    } else {
+      filtrados = [];
+    }
+  }
+
+  let filasHtml = '';
+  filtrados.forEach((u, index) => {
+    const areaObj = areasDb.find(a => Number(a.id) === Number(u.area_id));
+    const nombreArea = areaObj ? areaObj.nombre : 'Sin Área';
+    const idsAsignados = u.turnos_asignados_ids || [];
+    const detalleHorarios = rawTurnos
+      .filter(t => idsAsignados.includes(t.id))
+      .map(t => `L-V: ${t.lunes_viernes} | Sáb: ${t.sabado}`)
+      .join('<br>');
+
+    filasHtml += `
+      <tr>
+        <td>${index + 1}</td>
+        <td><b>${u.dni || '-'}</b></td>
+        <td><b>${u.nombres} ${u.apellidos}</b></td>
+        <td>${u.usuario || 'Pendiente'}</td>
+        <td>${u.rol.toUpperCase()}</td>
+        <td>${nombreArea}</td>
+        <td>${detalleHorarios || 'Sin asignar'}</td>
+      </tr>
+    `;
+  });
+
+  const htmlReport = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>Reporte de Lista de Colaboradores</title>
+      <style>
+        @page { size: auto; margin: 10mm; }
+        body { font-family: Arial, sans-serif; color: #111; margin: 20px; }
+        h2 { text-align: center; margin-bottom: 20px; color: #0f172a; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background-color: #0f172a; color: #fff; text-transform: uppercase; font-size: 9px; text-align: center; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        @media print { body { margin: 0; } button { display: none; } }
+      </style>
+    </head>
+    <body onload="window.print()">
+      <h2>📋 Reporte Consolidado de Colaboradores</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>DNI</th>
+            <th>Colaborador</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Área</th>
+            <th>Turnos / Horarios Asignados</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasHtml || '<tr><td colspan="7" style="text-align:center;">No hay colaboradores registrados.</td></tr>'}
+        </tbody>
+      </table>
       <br>
       <button onclick="window.print()" style="padding: 8px 16px; background: #0f172a; color: #fff; border: none; cursor: pointer; border-radius: 4px;">🖨️ Imprimir / PDF</button>
     </body>
