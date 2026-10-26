@@ -23,6 +23,7 @@ interface UserRecord {
   rol: 'admin' | 'supervisor' | 'usuario';
   area_id?: number | null;
   turnos_asignados_ids?: number[];
+  activo?: boolean;
 }
 
 interface HorarioSemanaConfig {
@@ -67,9 +68,15 @@ async function inicializarBaseDatos() {
         password TEXT,
         rol TEXT,
         area_id INT REFERENCES areas(id) ON DELETE SET NULL,
-        turnos_asignados_ids INT[]
+        turnos_asignados_ids INT[],
+        activo BOOLEAN DEFAULT TRUE
       );
     `;
+
+    // Intentar agregar la columna activo si la tabla ya existía sin ella
+    try {
+      await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;`;
+    } catch {}
 
     await sql`
       CREATE TABLE IF NOT EXISTS turnos (
@@ -101,8 +108,8 @@ async function inicializarBaseDatos() {
     const adminCheck = await sql`SELECT * FROM usuarios WHERE usuario = 'admin'`;
     if (adminCheck.length === 0) {
       await sql`
-        INSERT INTO usuarios (dni, nombres, apellidos, usuario, password, rol, area_id, turnos_asignados_ids)
-        VALUES ('00000000', 'Administrador', 'General', 'admin', '123', 'admin', NULL, ARRAY[]::integer[])
+        INSERT INTO usuarios (dni, nombres, apellidos, usuario, password, rol, area_id, turnos_asignados_ids, activo)
+        VALUES ('00000000', 'Administrador', 'General', 'admin', '123', 'admin', NULL, ARRAY[]::integer[], TRUE)
       `;
     }
     console.log('📦 Base de datos PostgreSQL inicializada correctamente.');
@@ -199,6 +206,10 @@ fastify.post<{ Body: { usuario: string; password: string } }>('/login', async (r
     reply.code(401);
     return { error: "Usuario o contraseña incorrectos" };
   }
+  if (user.activo === false) {
+    reply.code(403);
+    return { error: "Su cuenta se encuentra bloqueada. Contacte al administrador." };
+  }
   return { 
     success: true, 
     user: { 
@@ -209,9 +220,66 @@ fastify.post<{ Body: { usuario: string; password: string } }>('/login', async (r
       usuario: user.usuario, 
       rol: user.rol,
       area_id: user.area_id !== undefined && user.area_id !== null ? Number(user.area_id) : null,
-      turnos_asignados_ids: user.turnos_asignados_ids || []
+      turnos_asignados_ids: user.turnos_asignados_ids || [],
+      activo: user.activo ?? true
     } 
   };
+});
+
+// Endpoint público para verificar DNI al registrarse
+fastify.get<{ Querystring: { dni: string } }>('/verificar-dni', async (request, reply) => {
+  const { dni } = request.query;
+  if (!dni) {
+    reply.code(400);
+    return { error: "DNI requerido" };
+  }
+  const users = await sql<UserRecord[]>`SELECT * FROM usuarios WHERE dni = ${dni}`;
+  if (users.length === 0) {
+    return { encontrado: false };
+  }
+  const u = users[0];
+  return { 
+    encontrado: true, 
+    nombres: u.nombres, 
+    apellidos: u.apellidos, 
+    area_id: u.area_id,
+    registrado: !!u.usuario && u.usuario.trim() !== ''
+  };
+});
+
+// Registro público de usuario nuevo
+fastify.post<{ Body: { dni: string; nombres: string; apellidos: string; usuario: string; password: string; turnos_asignados_ids: number[] } }>('/registro', async (request, reply) => {
+  const data = request.body;
+  const existingUser = await sql`SELECT * FROM usuarios WHERE usuario = ${data.usuario}`;
+  if (existingUser.length > 0) {
+    reply.code(400);
+    return { error: "El nombre de usuario ya está en uso." };
+  }
+
+  const existingDni = await sql<UserRecord[]>`SELECT * FROM usuarios WHERE dni = ${data.dni}`;
+  if (existingDni.length > 0) {
+    const u = existingDni[0];
+    if (u.usuario && u.usuario.trim() !== '') {
+      reply.code(400);
+      return { error: "Este DNI ya cuenta con un usuario registrado en el sistema." };
+    }
+    // Actualizar el registro precargado por el supervisor con los datos de acceso
+    const result = await sql<UserRecord[]>`
+      UPDATE usuarios 
+      SET nombres = ${data.nombres}, apellidos = ${data.apellidos}, usuario = ${data.usuario}, password = ${data.password}, turnos_asignados_ids = ${data.turnos_asignados_ids || []}, activo = TRUE
+      WHERE dni = ${data.dni}
+      RETURNING *
+    `;
+    return { success: true, user: result[0] };
+  } else {
+    // Si no fue precargado, se crea nuevo sin área por defecto
+    const result = await sql<UserRecord[]>`
+      INSERT INTO usuarios (dni, nombres, apellidos, usuario, password, rol, area_id, turnos_asignados_ids, activo)
+      VALUES (${data.dni}, ${data.nombres}, ${data.apellidos}, ${data.usuario}, ${data.password}, 'usuario', NULL, ${data.turnos_asignados_ids || []}, TRUE)
+      RETURNING *
+    `;
+    return { success: true, user: result[0] };
+  }
 });
 
 // Áreas
@@ -253,17 +321,19 @@ fastify.get('/usuarios', async () => {
 
 fastify.post<{ Body: Omit<UserRecord, 'id'> }>('/usuarios', async (request, reply) => {
   const data = request.body;
-  const existing = await sql`SELECT * FROM usuarios WHERE usuario = ${data.usuario}`;
-  if (existing.length > 0) {
-    reply.code(400);
-    return { error: "El nombre de usuario ya existe" };
+  if (data.usuario) {
+    const existing = await sql`SELECT * FROM usuarios WHERE usuario = ${data.usuario}`;
+    if (existing.length > 0) {
+      reply.code(400);
+      return { error: "El nombre de usuario ya existe" };
+    }
   }
   const areaId = data.area_id !== undefined && data.area_id !== null && data.area_id !== '' ? Number(data.area_id) : null;
   const turnosIds = data.turnos_asignados_ids || [];
 
   const result = await sql<UserRecord[]>`
-    INSERT INTO usuarios (dni, nombres, apellidos, usuario, password, rol, area_id, turnos_asignados_ids)
-    VALUES (${data.dni}, ${data.nombres}, ${data.apellidos}, ${data.usuario}, ${data.password}, ${data.rol}, ${areaId}, ${turnosIds})
+    INSERT INTO usuarios (dni, nombres, apellidos, usuario, password, rol, area_id, turnos_asignados_ids, activo)
+    VALUES (${data.dni}, ${data.nombres}, ${data.apellidos}, ${data.usuario || null}, ${data.password || null}, ${data.rol}, ${areaId}, ${turnosIds}, TRUE)
     RETURNING *
   `;
   return result[0];
@@ -287,10 +357,11 @@ fastify.put<{ Params: { id: string }, Body: Partial<UserRecord> }>('/usuarios/:i
   const rol = updates.rol !== undefined ? updates.rol : current[0].rol;
   const area_id = updates.area_id !== undefined ? (updates.area_id !== null && updates.area_id !== '' ? Number(updates.area_id) : null) : current[0].area_id;
   const turnos_asignados_ids = updates.turnos_asignados_ids !== undefined ? updates.turnos_asignados_ids : current[0].turnos_asignados_ids;
+  const activo = updates.activo !== undefined ? updates.activo : (current[0].activo ?? true);
 
   const result = await sql<UserRecord[]>`
     UPDATE usuarios 
-    SET dni = ${dni}, nombres = ${nombres}, apellidos = ${apellidos}, usuario = ${usuario}, password = ${password}, rol = ${rol}, area_id = ${area_id}, turnos_asignados_ids = ${turnos_asignados_ids}
+    SET dni = ${dni}, nombres = ${nombres}, apellidos = ${apellidos}, usuario = ${usuario}, password = ${password}, rol = ${rol}, area_id = ${area_id}, turnos_asignados_ids = ${turnos_asignados_ids}, activo = ${activo}
     WHERE id = ${id}
     RETURNING *
   `;

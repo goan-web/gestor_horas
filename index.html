@@ -24,8 +24,8 @@
     
     .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
-    #login-container { max-width: 400px; margin: 80px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    #login-container h2 { text-align: center; margin-bottom: 20px; color: var(--primary); }
+    .auth-card { max-width: 420px; margin: 60px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .auth-card h2 { text-align: center; margin-bottom: 20px; color: var(--primary); }
 
     header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; flex-wrap: wrap; gap: 16px; }
     h1 { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
@@ -65,6 +65,7 @@
     .scrollable-box-5-lines { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-top: 15px; max-height: 165px; overflow-y: auto; }
     .scrollable-box-5-lines ul { margin-left: 20px; color: var(--text-muted); }
 
+    .table-container-6-lines { max-height: 310px; overflow-y: auto; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
     .table-container-10-lines { max-height: 480px; overflow-y: auto; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; color: #cbd5e1; }
     thead { background-color: #0f172a; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
@@ -74,7 +75,7 @@
     .row-counter { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 6px; }
 
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-    .modal-card { background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .modal-card { background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
     .password-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .password-wrapper input { padding-right: 36px; }
     .btn-eye { position: absolute; right: 8px; background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; color: var(--text-muted); opacity: 0.7; }
@@ -107,7 +108,7 @@
 <body>
 
   <!-- PANTALLA DE LOGIN -->
-  <div id="login-container">
+  <div id="login-container" class="auth-card">
     <h2>🔐 Iniciar Sesión</h2>
     <form id="login-form" style="display: flex; flex-direction: column; gap: 14px;">
       <div>
@@ -116,9 +117,58 @@
       </div>
       <div>
         <label>Contraseña</label>
-        <input type="password" id="login-password" required placeholder="••••••">
+        <div class="password-wrapper">
+          <input type="password" id="login-password" required placeholder="••••••">
+          <button type="button" class="btn-eye" onclick="togglePasswordVisibility('login-password', this)">👁️</button>
+        </div>
       </div>
       <button type="submit" class="btn-primary" style="margin-top: 10px;">Ingresar</button>
+      <div style="text-align: center; margin-top: 10px;">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">¿No tienes cuenta? <a href="#" onclick="mostrarVistaRegistro(event)" style="color: var(--primary); text-decoration: none; font-weight: 600;">Regístrate aquí</a></span>
+      </div>
+    </form>
+  </div>
+
+  <!-- PANTALLA DE REGISTRO DE USUARIO NUEVO -->
+  <div id="register-container" class="auth-card hidden" style="max-width: 500px;">
+    <h2>📝 Registro de Usuario</h2>
+    <form id="register-form" style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label>DNI</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="reg-dni" required maxlength="8" placeholder="Ingresa tu DNI" onblur="verificarDniRegistro()" style="flex: 1;">
+        </div>
+        <span id="reg-dni-msg" style="font-size: 0.7rem; color: var(--emerald); margin-top: 2px; display:block;"></span>
+      </div>
+      <div>
+        <label>Nombres</label>
+        <input type="text" id="reg-nombres" required placeholder="Tus nombres">
+      </div>
+      <div>
+        <label>Apellidos</label>
+        <input type="text" id="reg-apellidos" required placeholder="Tus apellidos">
+      </div>
+      <div>
+        <label>Nombre de Usuario</label>
+        <input type="text" id="reg-usuario" required placeholder="Crea tu usuario">
+      </div>
+      <div>
+        <label>Contraseña</label>
+        <div class="password-wrapper">
+          <input type="password" id="reg-password" required placeholder="Contraseña">
+          <button type="button" class="btn-eye" onclick="togglePasswordVisibility('reg-password', this)">👁️</button>
+        </div>
+      </div>
+      <div>
+        <label>Seleccionar Horarios Rotativos (Puedes marcar hasta 3)</label>
+        <div id="reg-turnos-checkboxes" class="checkbox-container">
+          <span style="font-size:0.75rem; color: var(--text-muted);">Cargando horarios...</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button type="button" onclick="volverLogin(event)" class="btn-secondary" style="flex: 1;">Volver</button>
+        <button type="submit" class="btn-primary" style="flex: 1;">Registrarse</button>
+      </div>
     </form>
   </div>
 
@@ -135,26 +185,36 @@
           <span>Balance Acumulado</span>
           <span id="total-horas">00:00 hrs</span>
         </div>
-        <button id="btn-config-user" onclick="abrirModalPassword()" class="btn-secondary hidden" title="Configurar / Cambiar Contraseña" style="padding: 8px 12px;">⚙️</button>
+        <button id="btn-config-user" onclick="abrirModalPassword()" class="btn-secondary hidden" title="Configurar / Actualizar Perfil" style="padding: 8px 12px;">⚙️ Configuración</button>
         <button onclick="cerrarSesion()" class="btn-danger">Cerrar Sesión</button>
       </div>
     </header>
 
-    <!-- MODAL CAMBIO DE CONTRASEÑA -->
+    <!-- MODAL CONFIGURACIÓN DE USUARIO -->
     <div id="modal-password" class="modal-overlay hidden">
       <div class="modal-card">
-        <h2>🔑 Configurar Mi Contraseña</h2>
-        <form id="password-form" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+        <h2>⚙️ Configurar Mis Datos</h2>
+        <form id="user-config-form" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
           <div>
-            <label>Nueva Contraseña</label>
+            <label>Nombre de Usuario</label>
+            <input type="text" id="config-usuario" required placeholder="Tu usuario">
+          </div>
+          <div>
+            <label>Nueva Contraseña (Opcional)</label>
             <div class="password-wrapper">
-              <input type="password" id="new-password" required placeholder="Nueva clave">
-              <button type="button" class="btn-eye" onclick="togglePasswordVisibility('new-password', this)">👁️</button>
+              <input type="password" id="config-password" placeholder="Dejar en blanco para no cambiar">
+              <button type="button" class="btn-eye" onclick="togglePasswordVisibility('config-password', this)">👁️</button>
+            </div>
+          </div>
+          <div>
+            <label>Horarios Rotativos Asignados</label>
+            <div id="config-turnos-checkboxes" class="checkbox-container">
+              <!-- Checkboxes generados dinámicamente -->
             </div>
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
             <button type="button" onclick="cerrarModalPassword()" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">Actualizar</button>
+            <button type="submit" class="btn-primary">Guardar Cambios</button>
           </div>
         </form>
       </div>
@@ -190,11 +250,7 @@
           <input type="hidden" id="turno-id">
           <div>
             <label>Nombre del Turno</label>
-            <select id="turno-nombre" required>
-              <option value="Horario 1">Horario 1</option>
-              <option value="Horario 2">Horario 2</option>
-              <option value="Horario 3">Horario 3</option>
-            </select>
+            <input type="text" id="turno-nombre" required placeholder="Ej: Turno Mañana / Rotativo A">
           </div>
           <div>
             <label>Fecha Inicio</label>
@@ -252,12 +308,12 @@
           <input type="text" id="usr-apellidos" required>
         </div>
         <div>
-          <label>Usuario</label>
-          <input type="text" id="usr-usuario" required>
+          <label>Usuario (Opcional al precargar)</label>
+          <input type="text" id="usr-usuario" placeholder="Se puede registrar solo con DNI">
         </div>
         <div>
           <label>Contraseña</label>
-          <input type="password" id="usr-password" required>
+          <input type="password" id="usr-password" placeholder="Opcional">
         </div>
         <div id="rol-container">
           <label>Rol</label>
@@ -286,7 +342,7 @@
         </div>
       </form>
 
-      <div class="table-container-10-lines" style="margin-top: 20px;">
+      <div class="table-container-6-lines" style="margin-top: 20px;">
         <table>
           <thead>
             <tr>
@@ -297,7 +353,7 @@
               <th>Área</th>
               <th id="th-pass-col">Contraseña</th>
               <th>Turnos Asignados</th>
-              <th style="text-align: center;">Acciones</th>
+              <th style="text-align: center;">Estado / Acciones</th>
             </tr>
           </thead>
           <tbody id="users-table-body"></tbody>
@@ -375,7 +431,6 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
         <h2 style="margin-bottom:0;">📋 Histórico de Registros</h2>
         
-        <!-- Filtros adicionales de tabla en pantalla (Área, Colaborador, Rango de Fechas) -->
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <div id="admin-filtro-tabla-container" class="hidden" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <div id="filtro-area-wrapper" class="hidden">
@@ -386,7 +441,6 @@
             <select id="filtro-tabla-usuario" onchange="cargarRegistros()" style="padding: 4px 8px; font-size: 0.8rem; width: 150px;"></select>
           </div>
           
-          <!-- Filtro de Fechas en Pantalla -->
           <div style="display: flex; align-items: center; gap: 6px;">
             <label style="margin:0; font-size:0.8rem;">Desde:</label>
             <input type="date" id="tabla-desde" onchange="cargarRegistros()" style="padding: 4px; font-size: 0.75rem; width: 120px;">
@@ -425,14 +479,6 @@
     let usuariosLista = [];
     let areasLista = [];
 
-    function abrirModalPassword() {
-      document.getElementById('modal-password').classList.remove('hidden');
-    }
-    function cerrarModalPassword() {
-      document.getElementById('modal-password').classList.add('hidden');
-      document.getElementById('password-form').reset();
-    }
-
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);
       if (input.type === 'password') {
@@ -443,6 +489,105 @@
         btn.innerText = '👁️';
       }
     }
+
+    function mostrarVistaRegistro(e) {
+      e.preventDefault();
+      document.getElementById('login-container').classList.add('hidden');
+      document.getElementById('register-container').classList.remove('hidden');
+      cargarTurnosParaRegistro();
+    }
+
+    function volverLogin(e) {
+      e.preventDefault();
+      document.getElementById('register-container').classList.add('hidden');
+      document.getElementById('login-container').classList.remove('hidden');
+      document.getElementById('register-form').reset();
+    }
+
+    async function cargarTurnosParaRegistro() {
+      try {
+        const res = await fetch('/turnos');
+        turnosConfigList = await res.json();
+        const container = document.getElementById('reg-turnos-checkboxes');
+        container.innerHTML = '';
+        if (turnosConfigList.length === 0) {
+          container.innerHTML = '<span style="font-size:0.75rem; color: var(--text-muted);">No hay horarios creados por el supervisor.</span>';
+          return;
+        }
+        turnosConfigList.forEach(t => {
+          container.innerHTML += `
+            <label class="checkbox-item">
+              <input type="checkbox" name="reg_turnos" value="${t.id}">
+              <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
+            </label>
+          `;
+        });
+      } catch (e) {
+        console.error("Error al cargar turnos para registro:", e);
+      }
+    }
+
+    async function verificarDniRegistro() {
+      const dni = document.getElementById('reg-dni').value.trim();
+      const msgEl = document.getElementById('reg-dni-msg');
+      if (dni.length !== 8) {
+        msgEl.innerText = "";
+        return;
+      }
+      try {
+        const res = await fetch(`/verificar-dni?dni=${dni}`);
+        const data = await res.json();
+        if (data.encontrado) {
+          document.getElementById('reg-nombres').value = data.nombres || '';
+          document.getElementById('reg-apellidos').value = data.apellidos || '';
+          if (data.registrado) {
+            msgEl.style.color = "var(--rose)";
+            msgEl.innerText = "⚠️ Este DNI ya tiene una cuenta activa.";
+          } else {
+            msgEl.style.color = "var(--emerald)";
+            msgEl.innerText = "✅ Colaborador encontrado en el sistema. Complete sus datos.";
+          }
+        } else {
+          msgEl.style.color = "var(--amber)";
+          msgEl.innerText = "ℹ️ DNI nuevo. Se registrará como usuario independiente.";
+        }
+      } catch (e) {
+        console.error("Error al verificar DNI:", e);
+      }
+    }
+
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll('input[name="reg_turnos"]:checked');
+      const turnosIds = Array.from(checkboxes).map(cb => Number(cb.value));
+
+      const payload = {
+        dni: document.getElementById('reg-dni').value,
+        nombres: document.getElementById('reg-nombres').value,
+        apellidos: document.getElementById('reg-apellidos').value,
+        usuario: document.getElementById('reg-usuario').value,
+        password: document.getElementById('reg-password').value,
+        turnos_asignados_ids: turnosIds
+      };
+
+      try {
+        const res = await fetch('/registro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Error al registrarse.");
+          return;
+        }
+        alert("¡Registro exitoso! Ya puedes iniciar sesión.");
+        volverLogin(e);
+      } catch (err) {
+        console.error("Error en registro:", err);
+        alert("Ocurrió un error en el servidor.");
+      }
+    });
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -456,12 +601,12 @@
           body: JSON.stringify({ usuario, password })
         });
 
+        const data = await res.json();
         if (!res.ok) {
-          alert("Usuario o contraseña incorrectos.");
+          alert(data.error || "Usuario o contraseña incorrectos.");
           return;
         }
 
-        const data = await res.json();
         usuarioActual = data.user;
         
         document.getElementById('login-container').classList.add('hidden');
@@ -482,12 +627,12 @@
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
           document.getElementById('btn-config-user').classList.add('hidden');
-          document.getElementById('user-section-title').innerText = "👥 2. Registrar Colaborador / Supervisor";
+          document.getElementById('user-section-title').innerText = "👥 2. Registrar Colaborador / Supervisor / Administrador";
           document.getElementById('opt-admin').style.display = 'block';
         } else if (usuarioActual.rol === 'supervisor') {
           document.getElementById('admin-panel-section').classList.remove('hidden');
           document.getElementById('admin-area-management').classList.add('hidden');
-          document.getElementById('admin-turnos-management').classList.add('hidden');
+          document.getElementById('admin-turnos-management').classList.remove('hidden');
           document.getElementById('overtime-section').classList.add('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
           document.getElementById('filtro-area-wrapper').classList.add('hidden');
@@ -495,7 +640,7 @@
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
           document.getElementById('btn-config-user').classList.add('hidden');
-          document.getElementById('user-section-title').innerText = "👥 Registrar Usuarios de mi Área";
+          document.getElementById('user-section-title').innerText = "👥 Registrar Colaboradores de mi Área";
           document.getElementById('opt-admin').style.display = 'none';
           document.getElementById('usr-rol').value = 'usuario';
           document.getElementById('rol-container').style.display = 'none';
@@ -526,21 +671,60 @@
       document.getElementById('login-form').reset();
     }
 
-    document.getElementById('password-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const nuevaPassword = document.getElementById('new-password').value;
+    function abrirModalPassword() {
+      document.getElementById('config-usuario').value = usuarioActual.usuario || '';
+      document.getElementById('config-password').value = '';
       
+      const container = document.getElementById('config-turnos-checkboxes');
+      container.innerHTML = '';
+      const asignados = usuarioActual.turnos_asignados_ids || [];
+      turnosConfigList.forEach(t => {
+        const checked = asignados.includes(t.id) ? 'checked' : '';
+        container.innerHTML += `
+          <label class="checkbox-item">
+            <input type="checkbox" name="config_turnos" value="${t.id}" ${checked}>
+            <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
+          </label>
+        `;
+      });
+
+      document.getElementById('modal-password').classList.remove('hidden');
+    }
+
+    function cerrarModalPassword() {
+      document.getElementById('modal-password').classList.add('hidden');
+    }
+
+    document.getElementById('user-config-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nuevoUsuario = document.getElementById('config-usuario').value;
+      const nuevaPassword = document.getElementById('config-password').value;
+      const checkboxes = document.querySelectorAll('input[name="config_turnos"]:checked');
+      const turnosIds = Array.from(checkboxes).map(cb => Number(cb.value));
+
+      const payload = {
+        usuario: nuevoUsuario,
+        turnos_asignados_ids: turnosIds
+      };
+      if (nuevaPassword.trim() !== '') {
+        payload.password = nuevaPassword;
+      }
+
       const res = await fetch(`/usuarios/${usuarioActual.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: nuevaPassword })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        alert("Contraseña actualizada exitosamente.");
+        const data = await res.json();
+        usuarioActual.usuario = data.usuario;
+        usuarioActual.turnos_asignados_ids = data.turnos_asignados_ids;
+        alert("Perfil actualizado correctamente.");
         cerrarModalPassword();
       } else {
-        alert("Error al actualizar la contraseña.");
+        const err = await res.json();
+        alert(err.error || "Error al actualizar perfil.");
       }
     });
 
@@ -658,14 +842,14 @@
               containerCheckboxes.innerHTML += `
                 <label class="checkbox-item">
                   <input type="checkbox" name="usr_turnos" value="${t.id}">
-                  <span><b>${t.nombre_turno}</b> (${t.lunes_viernes})</span>
+                  <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
                 </label>
               `;
             });
           }
         }
 
-        if (listaUl && usuarioActual && usuarioActual.rol === 'admin') {
+        if (listaUl && usuarioActual && (usuarioActual.rol === 'admin' || usuarioActual.rol === 'supervisor')) {
           listaUl.innerHTML = '';
           if (turnosConfigList.length === 0) {
             listaUl.innerHTML = '<li>No hay turnos registrados.</li>';
@@ -673,7 +857,7 @@
             turnosConfigList.forEach(t => {
               listaUl.innerHTML += `
                 <li style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                  <span><b>${t.nombre_turno}</b> (${formatearFechaVisual(t.fecha_inicio)} al ${formatearFechaVisual(t.fecha_fin)}): L-V [${t.lunes_viernes}]</span>
+                  <span><b>${t.nombre_turno}</b> (${formatearFechaVisual(t.fecha_inicio)} al ${formatearFechaVisual(t.fecha_fin)}): L-V [${t.lunes_viernes}] | Sáb [${t.sabado}]</span>
                   <div style="display: flex; gap: 4px;">
                     <button onclick="editarTurno(${t.id})" class="btn-action btn-edit" style="padding: 2px 6px;">✏️</button>
                     <button onclick="eliminarTurno(${t.id})" class="btn-action btn-delete" style="padding: 2px 6px;">🗑️</button>
@@ -786,7 +970,17 @@
 
           let passTd = '';
           if (usuarioActual.rol === 'admin') {
-            passTd = `<td>${u.password}</td>`;
+            passTd = `<td>${u.password || '(Pendiente)'}</td>`;
+          }
+
+          let btnBloquearHtml = '';
+          if (usuarioActual.rol === 'admin' && u.usuario !== 'admin') {
+            const estaActivo = u.activo ?? true;
+            if (estaActivo) {
+              btnBloquearHtml = `<button onclick="cambiarEstadoUsuario(${u.id}, false)" class="btn-action" style="background: rgba(251, 191, 36, 0.1); color: var(--amber);" title="Bloquear">🔒</button>`;
+            } else {
+              btnBloquearHtml = `<button onclick="cambiarEstadoUsuario(${u.id}, true)" class="btn-action" style="background: rgba(52, 211, 153, 0.1); color: var(--emerald);" title="Desbloquear">🔓</button>`;
+            }
           }
 
           let btnEliminarHtml = '';
@@ -798,11 +992,13 @@
             }
           }
 
+          const estadoBadge = (u.activo ?? true) ? '' : `<span class="badge" style="background:rgba(248,113,113,0.1); color:var(--rose); border-color:var(--rose); margin-left:4px;">Bloqueado</span>`;
+
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${u.dni}</td>
-            <td>${u.nombres} ${u.apellidos}</td>
-            <td>${u.usuario}</td>
+            <td>${u.nombres} ${u.apellidos} ${estadoBadge}</td>
+            <td>${u.usuario || '<span style="color:var(--text-muted)">Pendiente registro</span>'}</td>
             <td><span class="badge ${u.rol === 'admin' ? 'badge-extra' : (u.rol === 'supervisor' ? 'badge-feriado' : 'badge-papeleta')}">${u.rol}</span></td>
             <td>${nombreArea}</td>
             ${passTd}
@@ -810,6 +1006,7 @@
             <td>
               <div class="actions">
                 <button onclick="editarUsuario(${u.id})" class="btn-action btn-edit" title="Editar">✏️</button>
+                ${btnBloquearHtml}
                 ${btnEliminarHtml}
               </div>
             </td>
@@ -818,6 +1015,18 @@
         });
       } catch (e) {
         console.error("Error al cargar usuarios:", e);
+      }
+    }
+
+    async function cambiarEstadoUsuario(id, activar) {
+      const accion = activar ? "desbloquear" : "bloquear";
+      if (confirm(`¿Estás seguro de ${accion} a este usuario?`)) {
+        await fetch(`/usuarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activo: activar })
+        });
+        await cargarUsuarios();
       }
     }
 
@@ -879,7 +1088,9 @@
       }
 
       subset.forEach(u => {
-        selectTablaUsr.innerHTML += `<option value="${u.usuario}">${u.nombres} ${u.apellidos}</option>`;
+        if (u.usuario) {
+          selectTablaUsr.innerHTML += `<option value="${u.usuario}">${u.nombres} ${u.apellidos}</option>`;
+        }
       });
       cargarRegistros();
     }
@@ -905,7 +1116,9 @@
 
       let selectPdfHtml = `<select id="pdf-usuario" style="margin-right: 8px;"><option value="todos">-- Todos --</option>`;
       subset.forEach(u => {
-        selectPdfHtml += `<option value="${u.usuario}">${u.nombres} ${u.apellidos}</option>`;
+        if (u.usuario) {
+          selectPdfHtml += `<option value="${u.usuario}">${u.nombres} ${u.apellidos}</option>`;
+        }
       });
       selectPdfHtml += `</select>`;
       containerPdfUsr.innerHTML = selectPdfHtml;
@@ -934,8 +1147,8 @@
         dni: document.getElementById('usr-dni').value,
         nombres: document.getElementById('usr-nombres').value,
         apellidos: document.getElementById('usr-apellidos').value,
-        usuario: document.getElementById('usr-usuario').value,
-        password: document.getElementById('usr-password').value,
+        usuario: document.getElementById('usr-usuario').value || null,
+        password: document.getElementById('usr-password').value || null,
         rol: rol,
         area_id: areaId,
         turnos_asignados_ids: rol === 'admin' ? [] : turnosSeleccionados
@@ -962,7 +1175,7 @@
         cargarFiltrosAreaYUsuarios();
       } else {
         const err = await res.json();
-        alert(err.error || "Error al guardar usuario");
+        alert(err.error || "Error al guardar colaborador");
       }
     });
 
@@ -974,10 +1187,8 @@
       document.getElementById('usr-dni').value = u.dni;
       document.getElementById('usr-nombres').value = u.nombres;
       document.getElementById('usr-apellidos').value = u.apellidos;
-      document.getElementById('usr-usuario').value = u.usuario;
-      document.getElementById('usr-password').value = u.password;
-      
-      document.getElementById('usr-password').disabled = false;
+      document.getElementById('usr-usuario').value = u.usuario || '';
+      document.getElementById('usr-password').value = u.password || '';
 
       document.getElementById('usr-rol').value = u.rol;
       document.getElementById('usr-area').value = u.area_id !== null && u.area_id !== undefined ? u.area_id : '';
@@ -995,7 +1206,6 @@
     function cancelarEdicionUsuario() {
       document.getElementById('user-form').reset();
       document.getElementById('user-id-db').value = '';
-      document.getElementById('usr-password').disabled = false;
       const checkboxes = document.querySelectorAll('input[name="usr_turnos"]');
       checkboxes.forEach(cb => cb.checked = false);
       document.getElementById('btn-submit-user').innerText = "Guardar Colaborador";
@@ -1168,7 +1378,6 @@
           }
         }
 
-        // Filtro de fechas en pantalla (Desde / Hasta)
         const tablaDesde = document.getElementById('tabla-desde').value;
         const tablaHasta = document.getElementById('tabla-hasta').value;
         if (tablaDesde) filtrados = filtrados.filter(r => r.fecha >= tablaDesde);
