@@ -24,7 +24,7 @@
     
     .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
-    .auth-card { max-width: 420px; margin: 60px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .auth-card { max-width: 500px; margin: 40px auto; background: var(--bg-card); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     .auth-card h2 { text-align: center; margin-bottom: 20px; color: var(--primary); }
 
     header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; flex-wrap: wrap; gap: 16px; }
@@ -75,13 +75,13 @@
     .row-counter { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 6px; }
 
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-    .modal-card { background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
+    .modal-card { background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
     .password-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .password-wrapper input { padding-right: 36px; }
     .btn-eye { position: absolute; right: 8px; background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; color: var(--text-muted); opacity: 0.7; }
     .btn-eye:hover { opacity: 1; }
 
-    .checkbox-container { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .checkbox-container { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
     .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-main); }
     .checkbox-item input { width: auto; cursor: pointer; }
 
@@ -129,15 +129,13 @@
     </form>
   </div>
 
-  <!-- PANTALLA DE REGISTRO DE USUARIO NUEVO -->
-  <div id="register-container" class="auth-card hidden" style="max-width: 500px;">
-    <h2>📝 Registro de Usuario</h2>
+  <!-- PANTALLA DE REGISTRO DE USUARIO NUEVO (Validación Estricta de DNI en Lista Blanca) -->
+  <div id="register-container" class="auth-card hidden">
+    <h2>📝 Registro de Usuario y Horarios</h2>
     <form id="register-form" style="display: flex; flex-direction: column; gap: 12px;">
       <div>
         <label>DNI</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="reg-dni" required maxlength="8" placeholder="Ingresa tu DNI" onblur="verificarDniRegistro()" style="flex: 1;">
-        </div>
+        <input type="text" id="reg-dni" required maxlength="8" placeholder="Ingresa tu DNI" onblur="verificarDniRegistro()">
         <span id="reg-dni-msg" style="font-size: 0.7rem; color: var(--emerald); margin-top: 2px; display:block;"></span>
       </div>
       <div>
@@ -159,15 +157,53 @@
           <button type="button" class="btn-eye" onclick="togglePasswordVisibility('reg-password', this)">👁️</button>
         </div>
       </div>
+
+      <!-- FORMULARIO INTERNO PARA CREAR/AÑADIR HORARIOS EN EL REGISTRO -->
+      <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-top: 5px;">
+        <label style="font-weight: bold; color: var(--primary); margin-bottom: 8px;">⚙️ Crear Horario Rotativo (Se selecciona automáticamente)</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <div>
+            <label style="font-size: 0.7rem;">Nombre del Turno</label>
+            <input type="text" id="reg-turno-nombre" placeholder="Ej: Horario A">
+          </div>
+          <div>
+            <label style="font-size: 0.7rem;">Fecha Inicio</label>
+            <input type="date" id="reg-turno-inicio">
+          </div>
+          <div>
+            <label style="font-size: 0.7rem;">Fecha Fin</label>
+            <input type="date" id="reg-turno-fin">
+          </div>
+          <div>
+            <label style="font-size: 0.7rem;">Lunes a Viernes</label>
+            <div class="time-range-group">
+              <input type="time" id="reg-turno-lv-desde" value="07:00">
+              <span>-</span>
+              <input type="time" id="reg-turno-lv-hasta" value="17:00">
+            </div>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label style="font-size: 0.7rem;">Sábado</label>
+            <div class="time-range-group">
+              <input type="time" id="reg-turno-sab-desde" value="08:00">
+              <span>-</span>
+              <input type="time" id="reg-turno-sab-hasta" value="13:00">
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="agregarTurnoEnRegistro()" class="btn-secondary" style="width: 100%; padding: 6px; font-size: 0.8rem;">➕ Crear y Seleccionar este Horario</button>
+      </div>
+
       <div>
-        <label>Seleccionar Horarios Rotativos (Puedes marcar hasta 3)</label>
+        <label>Horarios Rotativos Seleccionados</label>
         <div id="reg-turnos-checkboxes" class="checkbox-container">
-          <span style="font-size:0.75rem; color: var(--text-muted);">Cargando horarios...</span>
+          <span style="font-size:0.75rem; color: var(--text-muted);">Aún no has agregado horarios.</span>
         </div>
       </div>
+
       <div style="display: flex; gap: 8px; margin-top: 10px;">
         <button type="button" onclick="volverLogin(event)" class="btn-secondary" style="flex: 1;">Volver</button>
-        <button type="submit" class="btn-primary" style="flex: 1;">Registrarse</button>
+        <button type="submit" id="btn-submit-registro" class="btn-primary" style="flex: 1;">Registrarse</button>
       </div>
     </form>
   </div>
@@ -190,31 +226,47 @@
       </div>
     </header>
 
-    <!-- MODAL CONFIGURACIÓN DE USUARIO -->
+    <!-- MODAL CONFIGURACIÓN COMPLETA DE USUARIO / SUPERVISOR -->
     <div id="modal-password" class="modal-overlay hidden">
       <div class="modal-card">
-        <h2>⚙️ Configurar Mis Datos</h2>
-        <form id="user-config-form" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+        <h2 id="modal-config-title">⚙️ Configurar Mis Datos</h2>
+        <form id="user-config-form" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+          <div>
+            <label>DNI</label>
+            <input type="text" id="config-dni" required maxlength="8">
+          </div>
+          <div>
+            <label>Nombres</label>
+            <input type="text" id="config-nombres" required>
+          </div>
+          <div>
+            <label>Apellidos</label>
+            <input type="text" id="config-apellidos" required>
+          </div>
           <div>
             <label>Nombre de Usuario</label>
-            <input type="text" id="config-usuario" required placeholder="Tu usuario">
+            <input type="text" id="config-usuario" required>
           </div>
           <div>
             <label>Nueva Contraseña (Opcional)</label>
             <div class="password-wrapper">
-              <input type="password" id="config-password" placeholder="Dejar en blanco para no cambiar">
+              <input type="password" id="config-password" placeholder="Dejar en blanco para conservar actual">
               <button type="button" class="btn-eye" onclick="togglePasswordVisibility('config-password', this)">👁️</button>
             </div>
           </div>
-          <div>
+          <div id="config-turnos-box">
             <label>Horarios Rotativos Asignados</label>
             <div id="config-turnos-checkboxes" class="checkbox-container">
-              <!-- Checkboxes generados dinámicamente -->
+              <!-- Checkboxes dinámicos -->
             </div>
           </div>
-          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
-            <button type="button" onclick="cerrarModalPassword()" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">Guardar Cambios</button>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <button type="button" onclick="eliminarCuentaPropia()" class="btn-danger" style="font-size: 0.75rem; padding: 6px 10px;">🗑️ Eliminar Mi Cuenta</button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" onclick="cerrarModalPassword()" class="btn-secondary">Cancelar</button>
+              <button type="submit" class="btn-primary">Guardar Cambios</button>
+            </div>
           </div>
         </form>
       </div>
@@ -223,7 +275,7 @@
     <!-- PANEL ADMINISTRADOR / SUPERVISOR -->
     <section id="admin-panel-section" class="hidden">
       
-      <!-- GESTIÓN DE ÁREAS -->
+      <!-- GESTIÓN DE ÁREAS (SOLO ADMIN) -->
       <div id="admin-area-management" class="hidden" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
         <h2 id="area-form-title">🏢 0. Crear y Gestionar Áreas</h2>
         <form id="area-form" style="max-width: 450px; display: flex; gap: 12px; align-items: flex-end;">
@@ -243,14 +295,14 @@
         </div>
       </div>
 
-      <!-- CONFIGURACIÓN DE TURNOS -->
+      <!-- CONFIGURACIÓN DE TURNOS (SOLO ADMIN) -->
       <div id="admin-turnos-management" class="hidden">
         <h2 id="turno-form-title">⚙️ 1. Configurar Horarios Rotativos</h2>
         <form id="turno-form">
           <input type="hidden" id="turno-id">
           <div>
             <label>Nombre del Turno</label>
-            <input type="text" id="turno-nombre" required placeholder="Ej: Turno Mañana / Rotativo A">
+            <input type="text" id="turno-nombre" required placeholder="Ej: Horario A">
           </div>
           <div>
             <label>Fecha Inicio</label>
@@ -290,59 +342,84 @@
         </div>
       </div>
 
-      <!-- REGISTRO DE COLABORADORES -->
-      <h2 id="user-section-title" style="margin-top: 20px;">👥 2. Registrar Colaborador / Supervisor</h2>
-      <form id="user-form">
-        <input type="hidden" id="user-id-db">
-        
-        <div>
-          <label>DNI</label>
-          <input type="text" id="usr-dni" required maxlength="8">
-        </div>
-        <div>
-          <label>Nombres</label>
-          <input type="text" id="usr-nombres" required>
-        </div>
-        <div>
-          <label>Apellidos</label>
-          <input type="text" id="usr-apellidos" required>
-        </div>
-        <div>
-          <label>Usuario (Opcional al precargar)</label>
-          <input type="text" id="usr-usuario" placeholder="Se puede registrar solo con DNI">
-        </div>
-        <div>
-          <label>Contraseña</label>
-          <input type="password" id="usr-password" placeholder="Opcional">
-        </div>
-        <div id="rol-container">
-          <label>Rol</label>
-          <select id="usr-rol" onchange="actualizarSelectAreasColaborador()">
-            <option value="usuario">Usuario</option>
-            <option value="supervisor">Supervisor</option>
-            <option id="opt-admin" value="admin">Administrador</option>
-          </select>
-        </div>
-        <div id="area-assign-container">
-          <label id="lbl-area-assign">Área Asignada</label>
-          <select id="usr-area">
-            <option value="">-- Sin Área (Admin) --</option>
-          </select>
-        </div>
-        <div style="grid-column: 1 / -1;" id="turnos-assign-box">
-          <label>Asignar Horario(s) Rotativo(s)</label>
-          <div id="usr-turnos-checkboxes" class="checkbox-container">
-            <span style="font-size:0.75rem; color: var(--text-muted);">No hay horarios creados.</span>
+      <!-- GESTIÓN / AUTORIZACIÓN DE DNIs DE COLABORADORES (VISIBLE PARA SUPERVISOR Y ADMIN) -->
+      <div id="supervisor-dni-section" class="hidden" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+        <h2>📋 Autorizar DNI de Colaborador (Lista Blanca)</h2>
+        <p class="subtitle" style="margin-bottom: 10px;">Registra aquí el DNI y nombres del colaborador para que pueda completar su registro en el sistema.</p>
+        <form id="supervisor-dni-form" style="max-width: 600px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: flex-end;">
+          <div>
+            <label>DNI (8 dígitos)</label>
+            <input type="text" id="sup-dni" required maxlength="8" placeholder="DNI">
           </div>
-        </div>
+          <div>
+            <label>Nombres</label>
+            <input type="text" id="sup-nombres" required placeholder="Nombres">
+          </div>
+          <div>
+            <label>Apellidos</label>
+            <input type="text" id="sup-apellidos" required placeholder="Apellidos">
+          </div>
+          <button type="submit" class="btn-primary" style="height: 38px;">Autorizar DNI</button>
+        </form>
+      </div>
 
-        <div class="full-width">
-          <button type="button" onclick="cancelarEdicionUsuario()" id="btn-cancel-user" class="btn-secondary hidden">Cancelar</button>
-          <button type="submit" id="btn-submit-user" class="btn-primary">Guardar Colaborador</button>
-        </div>
-      </form>
+      <!-- REGISTRO / EDICIÓN DE COLABORADORES (SOLO ADMIN) -->
+      <div id="admin-user-management" class="hidden">
+        <h2 id="user-section-title" style="margin-top: 20px;">👥 2. Registrar / Modificar Colaborador / Supervisor</h2>
+        <form id="user-form">
+          <input type="hidden" id="user-id-db">
+          
+          <div>
+            <label>DNI</label>
+            <input type="text" id="usr-dni" required maxlength="8">
+          </div>
+          <div>
+            <label>Nombres</label>
+            <input type="text" id="usr-nombres" required>
+          </div>
+          <div>
+            <label>Apellidos</label>
+            <input type="text" id="usr-apellidos" required>
+          </div>
+          <div>
+            <label>Usuario (Opcional)</label>
+            <input type="text" id="usr-usuario" placeholder="Opcional al precargar">
+          </div>
+          <div>
+            <label>Contraseña</label>
+            <input type="password" id="usr-password" placeholder="Opcional">
+          </div>
+          <div id="rol-container">
+            <label>Rol</label>
+            <select id="usr-rol" onchange="actualizarSelectAreasColaborador()">
+              <option value="usuario">Usuario</option>
+              <option value="supervisor">Supervisor</option>
+              <option id="opt-admin" value="admin">Administrador</option>
+            </select>
+          </div>
+          <div id="area-assign-container">
+            <label id="lbl-area-assign">Área Asignada</label>
+            <select id="usr-area">
+              <option value="">-- Sin Área (Admin) --</option>
+            </select>
+          </div>
+          <div style="grid-column: 1 / -1;" id="turnos-assign-box">
+            <label>Asignar Horario(s) Rotativo(s)</label>
+            <div id="usr-turnos-checkboxes" class="checkbox-container">
+              <span style="font-size:0.75rem; color: var(--text-muted);">No hay horarios creados.</span>
+            </div>
+          </div>
 
-      <div class="table-container-6-lines" style="margin-top: 20px;">
+          <div class="full-width">
+            <button type="button" onclick="cancelarEdicionUsuario()" id="btn-cancel-user" class="btn-secondary hidden">Cancelar</button>
+            <button type="submit" id="btn-submit-user" class="btn-primary">Guardar Colaborador</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TABLA DE LISTA DE COLABORADORES (VISTA COMPARTIDA ADMIN/SUPERVISOR CON HASTA 6 FILAS SCROLL) -->
+      <h2 id="list-section-title" style="margin-top: 25px;">👥 Lista de Colaboradores</h2>
+      <div class="table-container-6-lines">
         <table>
           <thead>
             <tr>
@@ -478,6 +555,7 @@
     let turnosConfigList = [];
     let usuariosLista = [];
     let areasLista = [];
+    let turnosTemporalesRegistro = [];
 
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);
@@ -494,7 +572,8 @@
       e.preventDefault();
       document.getElementById('login-container').classList.add('hidden');
       document.getElementById('register-container').classList.remove('hidden');
-      cargarTurnosParaRegistro();
+      turnosTemporalesRegistro = [];
+      actualizarCheckboxesTurnosRegistro();
     }
 
     function volverLogin(e) {
@@ -504,32 +583,76 @@
       document.getElementById('register-form').reset();
     }
 
-    async function cargarTurnosParaRegistro() {
-      try {
-        const res = await fetch('/turnos');
-        turnosConfigList = await res.json();
-        const container = document.getElementById('reg-turnos-checkboxes');
-        container.innerHTML = '';
-        if (turnosConfigList.length === 0) {
-          container.innerHTML = '<span style="font-size:0.75rem; color: var(--text-muted);">No hay horarios creados por el supervisor.</span>';
-          return;
-        }
-        turnosConfigList.forEach(t => {
-          container.innerHTML += `
-            <label class="checkbox-item">
-              <input type="checkbox" name="reg_turnos" value="${t.id}">
-              <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
-            </label>
-          `;
-        });
-      } catch (e) {
-        console.error("Error al cargar turnos para registro:", e);
+    async function agregarTurnoEnRegistro() {
+      const nombre = document.getElementById('reg-turno-nombre').value.trim();
+      const inicio = document.getElementById('reg-turno-inicio').value;
+      const fin = document.getElementById('reg-turno-fin').value;
+      const lvDesde = document.getElementById('reg-turno-lv-desde').value;
+      const lvHasta = document.getElementById('reg-turno-lv-hasta').value;
+      const sabDesde = document.getElementById('reg-turno-sab-desde').value;
+      const sabHasta = document.getElementById('reg-turno-sab-hasta').value;
+
+      if (!nombre || !inicio || !fin) {
+        alert("Completa el nombre del turno, fecha de inicio y fecha de fin.");
+        return;
       }
+
+      if (turnosTemporalesRegistro.length >= 3) {
+        alert("Puedes registrar máximo 3 horarios.");
+        return;
+      }
+
+      const turnoObj = {
+        nombre_turno: nombre,
+        fecha_inicio: inicio,
+        fecha_fin: fin,
+        lunes_viernes: `${lvDesde} - ${lvHasta}`,
+        sabado: `${sabDesde} - ${sabHasta}`
+      };
+
+      try {
+        const res = await fetch('/turnos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(turnoObj)
+        });
+        if (res.ok) {
+          const creado = await res.json();
+          turnosTemporalesRegistro.push(creado);
+          alert("¡Horario creado y seleccionado automáticamente!");
+          document.getElementById('reg-turno-nombre').value = '';
+          document.getElementById('reg-turno-inicio').value = '';
+          document.getElementById('reg-turno-fin').value = '';
+          actualizarCheckboxesTurnosRegistro();
+        } else {
+          alert("Error al guardar el horario.");
+        }
+      } catch (e) {
+        console.error("Error al registrar turno:", e);
+      }
+    }
+
+    function actualizarCheckboxesTurnosRegistro() {
+      const container = document.getElementById('reg-turnos-checkboxes');
+      container.innerHTML = '';
+      if (turnosTemporalesRegistro.length === 0) {
+        container.innerHTML = '<span style="font-size:0.75rem; color: var(--text-muted);">Aún no has agregado horarios. Usa el formulario superior.</span>';
+        return;
+      }
+      turnosTemporalesRegistro.forEach((t) => {
+        container.innerHTML += `
+          <label class="checkbox-item">
+            <input type="checkbox" name="reg_turnos" value="${t.id}" checked>
+            <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
+          </label>
+        `;
+      });
     }
 
     async function verificarDniRegistro() {
       const dni = document.getElementById('reg-dni').value.trim();
       const msgEl = document.getElementById('reg-dni-msg');
+      const btnReg = document.getElementById('btn-submit-registro');
       if (dni.length !== 8) {
         msgEl.innerText = "";
         return;
@@ -542,14 +665,19 @@
           document.getElementById('reg-apellidos').value = data.apellidos || '';
           if (data.registrado) {
             msgEl.style.color = "var(--rose)";
-            msgEl.innerText = "⚠️ Este DNI ya tiene una cuenta activa.";
+            msgEl.innerText = "⚠️ Este DNI ya cuenta con una cuenta activa registrada.";
+            btnReg.disabled = true;
           } else {
             msgEl.style.color = "var(--emerald)";
-            msgEl.innerText = "✅ Colaborador encontrado en el sistema. Complete sus datos.";
+            msgEl.innerText = "✅ DNI autorizado por supervisor. Complete sus credenciales.";
+            btnReg.disabled = false;
           }
         } else {
-          msgEl.style.color = "var(--amber)";
-          msgEl.innerText = "ℹ️ DNI nuevo. Se registrará como usuario independiente.";
+          msgEl.style.color = "var(--rose)";
+          msgEl.innerText = "❌ Su DNI no se encuentra autorizado en el sistema. Contacte a su supervisor.";
+          btnReg.disabled = true;
+          document.getElementById('reg-nombres').value = '';
+          document.getElementById('reg-apellidos').value = '';
         }
       } catch (e) {
         console.error("Error al verificar DNI:", e);
@@ -620,31 +748,29 @@
           document.getElementById('admin-panel-section').classList.remove('hidden');
           document.getElementById('admin-area-management').classList.remove('hidden');
           document.getElementById('admin-turnos-management').classList.remove('hidden');
+          document.getElementById('admin-user-management').classList.remove('hidden');
+          document.getElementById('supervisor-dni-section').classList.add('hidden'); // Admin usa su panel completo
           document.getElementById('overtime-section').classList.add('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
           document.getElementById('filtro-area-wrapper').classList.remove('hidden');
           document.getElementById('pdf-filtro-area-container').classList.remove('hidden');
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
-          document.getElementById('btn-config-user').classList.add('hidden');
-          document.getElementById('user-section-title').innerText = "👥 2. Registrar Colaborador / Supervisor / Administrador";
+          document.getElementById('btn-config-user').classList.remove('hidden'); // Permite cambiar contraseña al admin también
           document.getElementById('opt-admin').style.display = 'block';
         } else if (usuarioActual.rol === 'supervisor') {
           document.getElementById('admin-panel-section').classList.remove('hidden');
           document.getElementById('admin-area-management').classList.add('hidden');
-          document.getElementById('admin-turnos-management').classList.remove('hidden');
+          document.getElementById('admin-turnos-management').classList.add('hidden');
+          document.getElementById('admin-user-management').classList.add('hidden');
+          document.getElementById('supervisor-dni-section').classList.remove('hidden'); // Habilitado para supervisor
           document.getElementById('overtime-section').classList.add('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
           document.getElementById('filtro-area-wrapper').classList.add('hidden');
           document.getElementById('pdf-filtro-area-container').classList.add('hidden');
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
-          document.getElementById('btn-config-user').classList.add('hidden');
-          document.getElementById('user-section-title').innerText = "👥 Registrar Colaboradores de mi Área";
-          document.getElementById('opt-admin').style.display = 'none';
-          document.getElementById('usr-rol').value = 'usuario';
-          document.getElementById('rol-container').style.display = 'none';
-          document.getElementById('area-assign-container').style.display = 'none';
+          document.getElementById('btn-config-user').classList.remove('hidden'); // Habilitado para cambiar contraseña de supervisor
         } else {
           document.getElementById('admin-panel-section').classList.add('hidden');
           document.getElementById('overtime-section').classList.remove('hidden');
@@ -672,21 +798,30 @@
     }
 
     function abrirModalPassword() {
+      document.getElementById('config-dni').value = usuarioActual.dni || '';
+      document.getElementById('config-nombres').value = usuarioActual.nombres || '';
+      document.getElementById('config-apellidos').value = usuarioActual.apellidos || '';
       document.getElementById('config-usuario').value = usuarioActual.usuario || '';
       document.getElementById('config-password').value = '';
       
-      const container = document.getElementById('config-turnos-checkboxes');
-      container.innerHTML = '';
-      const asignados = usuarioActual.turnos_asignados_ids || [];
-      turnosConfigList.forEach(t => {
-        const checked = asignados.includes(t.id) ? 'checked' : '';
-        container.innerHTML += `
-          <label class="checkbox-item">
-            <input type="checkbox" name="config_turnos" value="${t.id}" ${checked}>
-            <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
-          </label>
-        `;
-      });
+      const turnosBox = document.getElementById('config-turnos-box');
+      if (usuarioActual.rol === 'supervisor' || usuarioActual.rol === 'admin') {
+        turnosBox.style.display = 'none'; // Supervisores/Admin configuran sus credenciales básicas
+      } else {
+        turnosBox.style.display = 'block';
+        const container = document.getElementById('config-turnos-checkboxes');
+        container.innerHTML = '';
+        const asignados = usuarioActual.turnos_asignados_ids || [];
+        turnosConfigList.forEach(t => {
+          const checked = asignados.includes(t.id) ? 'checked' : '';
+          container.innerHTML += `
+            <label class="checkbox-item">
+              <input type="checkbox" name="config_turnos" value="${t.id}" ${checked}>
+              <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
+            </label>
+          `;
+        });
+      }
 
       document.getElementById('modal-password').classList.remove('hidden');
     }
@@ -697,14 +832,21 @@
 
     document.getElementById('user-config-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const nuevoDni = document.getElementById('config-dni').value;
+      const nuevosNombres = document.getElementById('config-nombres').value;
+      const nuevosApellidos = document.getElementById('config-apellidos').value;
       const nuevoUsuario = document.getElementById('config-usuario').value;
       const nuevaPassword = document.getElementById('config-password').value;
+      
       const checkboxes = document.querySelectorAll('input[name="config_turnos"]:checked');
       const turnosIds = Array.from(checkboxes).map(cb => Number(cb.value));
 
       const payload = {
+        dni: nuevoDni,
+        nombres: nuevosNombres,
+        apellidos: nuevosApellidos,
         usuario: nuevoUsuario,
-        turnos_asignados_ids: turnosIds
+        turnos_asignados_ids: usuarioActual.rol === 'usuario' ? turnosIds : (usuarioActual.turnos_asignados_ids || [])
       };
       if (nuevaPassword.trim() !== '') {
         payload.password = nuevaPassword;
@@ -718,15 +860,62 @@
 
       if (res.ok) {
         const data = await res.json();
-        usuarioActual.usuario = data.usuario;
-        usuarioActual.turnos_asignados_ids = data.turnos_asignados_ids;
-        alert("Perfil actualizado correctamente.");
+        usuarioActual = data;
+        alert("Datos y contraseña actualizados correctamente.");
         cerrarModalPassword();
+        document.getElementById('welcome-user').innerText = `Bienvenido, ${usuarioActual.nombres} ${usuarioActual.apellidos} (${usuarioActual.rol.toUpperCase()})`;
       } else {
         const err = await res.json();
         alert(err.error || "Error al actualizar perfil.");
       }
     });
+
+    async function eliminarCuentaPropia() {
+      if (confirm("⚠️ ¿Estás completamente seguro de eliminar tu cuenta? Esta acción no se puede deshacer.")) {
+        await fetch(`/usuarios/${usuarioActual.id}`, { method: 'DELETE' });
+        alert("Cuenta eliminada.");
+        cerrarSesion();
+      }
+    }
+
+    // Autorización rápida de DNI por Supervisor
+    const supervisorDniForm = document.getElementById('supervisor-dni-form');
+    if (supervisorDniForm) {
+      supervisorDniForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dni = document.getElementById('sup-dni').value.trim();
+        const nombres = document.getElementById('sup-nombres').value.trim();
+        const apellidos = document.getElementById('sup-apellidos').value.trim();
+        const areaIdSup = obtenerAreaIdActualSupervisor();
+
+        const payload = {
+          dni,
+          nombres,
+          apellidos,
+          usuario: null,
+          password: null,
+          rol: 'usuario',
+          area_id: areaIdSup,
+          turnos_asignados_ids: []
+        };
+
+        const res = await fetch('/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert("¡DNI autorizado con éxito! El colaborador ya puede registrarse.");
+          supervisorDniForm.reset();
+          await cargarUsuarios();
+          await cargarFiltrosAreaYUsuarios();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Error al autorizar DNI.");
+        }
+      });
+    }
 
     // Gestión de Áreas
     async function cargarAreas() {
@@ -849,7 +1038,7 @@
           }
         }
 
-        if (listaUl && usuarioActual && (usuarioActual.rol === 'admin' || usuarioActual.rol === 'supervisor')) {
+        if (listaUl && usuarioActual && usuarioActual.rol === 'admin') {
           listaUl.innerHTML = '';
           if (turnosConfigList.length === 0) {
             listaUl.innerHTML = '<li>No hay turnos registrados.</li>';
@@ -973,23 +1162,25 @@
             passTd = `<td>${u.password || '(Pendiente)'}</td>`;
           }
 
-          let btnBloquearHtml = '';
-          if (usuarioActual.rol === 'admin' && u.usuario !== 'admin') {
+          let accionesHtml = '-';
+          if (usuarioActual.rol === 'admin') {
             const estaActivo = u.activo ?? true;
-            if (estaActivo) {
-              btnBloquearHtml = `<button onclick="cambiarEstadoUsuario(${u.id}, false)" class="btn-action" style="background: rgba(251, 191, 36, 0.1); color: var(--amber);" title="Bloquear">🔒</button>`;
-            } else {
-              btnBloquearHtml = `<button onclick="cambiarEstadoUsuario(${u.id}, true)" class="btn-action" style="background: rgba(52, 211, 153, 0.1); color: var(--emerald);" title="Desbloquear">🔓</button>`;
-            }
-          }
+            let btnBloquear = estaActivo
+              ? `<button onclick="cambiarEstadoUsuario(${u.id}, false)" class="btn-action" style="background: rgba(251, 191, 36, 0.1); color: var(--amber);" title="Bloquear">🔒</button>`
+              : `<button onclick="cambiarEstadoUsuario(${u.id}, true)" class="btn-action" style="background: rgba(52, 211, 153, 0.1); color: var(--emerald);" title="Desbloquear">🔓</button>`;
+            
+            let btnQuitarArea = u.area_id ? `<button onclick="quitarDeArea(${u.id})" class="btn-action" style="background: rgba(99, 102, 241, 0.1); color: #818cf8;" title="Quitar de Área">🚫 Área</button>` : '';
 
-          let btnEliminarHtml = '';
-          if (u.usuario !== 'admin') {
-            if (usuarioActual.rol === 'supervisor' && Number(u.id) === Number(usuarioActual.id)) {
-              btnEliminarHtml = '';
-            } else {
-              btnEliminarHtml = `<button onclick="eliminarUsuario(${u.id})" class="btn-action btn-delete" title="Eliminar">🗑️</button>`;
-            }
+            accionesHtml = `
+              <div class="actions">
+                <button onclick="editarUsuario(${u.id})" class="btn-action btn-edit" title="Editar">✏️</button>
+                ${btnQuitarArea}
+                ${btnBloquear}
+                <button onclick="eliminarUsuario(${u.id})" class="btn-action btn-delete" title="Eliminar">🗑️</button>
+              </div>
+            `;
+          } else if (usuarioActual.rol === 'supervisor') {
+            accionesHtml = `<span style="font-size:0.75rem; color:var(--text-muted);">Solo lectura</span>`;
           }
 
           const estadoBadge = (u.activo ?? true) ? '' : `<span class="badge" style="background:rgba(248,113,113,0.1); color:var(--rose); border-color:var(--rose); margin-left:4px;">Bloqueado</span>`;
@@ -998,23 +1189,28 @@
           tr.innerHTML = `
             <td>${u.dni}</td>
             <td>${u.nombres} ${u.apellidos} ${estadoBadge}</td>
-            <td>${u.usuario || '<span style="color:var(--text-muted)">Pendiente registro</span>'}</td>
+            <td>${u.usuario || '<span style="color:var(--amber)">Pendiente registro</span>'}</td>
             <td><span class="badge ${u.rol === 'admin' ? 'badge-extra' : (u.rol === 'supervisor' ? 'badge-feriado' : 'badge-papeleta')}">${u.rol}</span></td>
             <td>${nombreArea}</td>
             ${passTd}
             <td style="color: var(--emerald); font-weight: 500;">${nombresTurnos || 'Sin asignar'}</td>
-            <td>
-              <div class="actions">
-                <button onclick="editarUsuario(${u.id})" class="btn-action btn-edit" title="Editar">✏️</button>
-                ${btnBloquearHtml}
-                ${btnEliminarHtml}
-              </div>
-            </td>
+            <td style="text-align:center;">${accionesHtml}</td>
           `;
           tbody.appendChild(tr);
         });
       } catch (e) {
         console.error("Error al cargar usuarios:", e);
+      }
+    }
+
+    async function quitarDeArea(id) {
+      if (confirm("¿Deseas quitar a este colaborador de su área? Ya no aparecerá en la lista de su supervisor.")) {
+        await fetch(`/usuarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ area_id: null })
+        });
+        await cargarUsuarios();
       }
     }
 
@@ -1124,60 +1320,58 @@
       containerPdfUsr.innerHTML = selectPdfHtml;
     }
 
-    document.getElementById('user-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = document.getElementById('user-id-db').value;
+    const userFormEl = document.getElementById('user-form');
+    if (userFormEl) {
+      userFormEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('user-id-db').value;
 
-      const checkboxes = document.querySelectorAll('input[name="usr_turnos"]:checked');
-      const turnosSeleccionados = Array.from(checkboxes).map(cb => Number(cb.value));
+        const checkboxes = document.querySelectorAll('input[name="usr_turnos"]:checked');
+        const turnosSeleccionados = Array.from(checkboxes).map(cb => Number(cb.value));
 
-      let rol = document.getElementById('usr-rol').value;
-      let areaId = document.getElementById('usr-area').value ? Number(document.getElementById('usr-area').value) : null;
+        let rol = document.getElementById('usr-rol').value;
+        let areaId = document.getElementById('usr-area').value ? Number(document.getElementById('usr-area').value) : null;
 
-      if (usuarioActual.rol === 'supervisor') {
-        rol = 'usuario';
-        areaId = obtenerAreaIdActualSupervisor();
-      }
+        if (rol === 'admin') {
+          areaId = null;
+        }
 
-      if (rol === 'admin') {
-        areaId = null;
-      }
+        const data = {
+          dni: document.getElementById('usr-dni').value,
+          nombres: document.getElementById('usr-nombres').value,
+          apellidos: document.getElementById('usr-apellidos').value,
+          usuario: document.getElementById('usr-usuario').value || null,
+          password: document.getElementById('usr-password').value || null,
+          rol: rol,
+          area_id: areaId,
+          turnos_asignados_ids: rol === 'admin' ? [] : turnosSeleccionados
+        };
 
-      const data = {
-        dni: document.getElementById('usr-dni').value,
-        nombres: document.getElementById('usr-nombres').value,
-        apellidos: document.getElementById('usr-apellidos').value,
-        usuario: document.getElementById('usr-usuario').value || null,
-        password: document.getElementById('usr-password').value || null,
-        rol: rol,
-        area_id: areaId,
-        turnos_asignados_ids: rol === 'admin' ? [] : turnosSeleccionados
-      };
+        let res;
+        if (id) {
+          res = await fetch(`/usuarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        } else {
+          res = await fetch('/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        }
 
-      let res;
-      if (id) {
-        res = await fetch(`/usuarios/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      } else {
-        res = await fetch('/usuarios', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      }
-
-      if (res.ok) {
-        cancelarEdicionUsuario();
-        cargarUsuarios();
-        cargarFiltrosAreaYUsuarios();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Error al guardar colaborador");
-      }
-    });
+        if (res.ok) {
+          cancelarEdicionUsuario();
+          cargarUsuarios();
+          cargarFiltrosAreaYUsuarios();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Error al guardar colaborador");
+        }
+      });
+    }
 
     function editarUsuario(id) {
       const u = usuariosLista.find(item => Number(item.id) === Number(id));
@@ -1204,7 +1398,8 @@
     }
 
     function cancelarEdicionUsuario() {
-      document.getElementById('user-form').reset();
+      const form = document.getElementById('user-form');
+      if (form) form.reset();
       document.getElementById('user-id-db').value = '';
       const checkboxes = document.querySelectorAll('input[name="usr_turnos"]');
       checkboxes.forEach(cb => cb.checked = false);

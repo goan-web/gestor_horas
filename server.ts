@@ -73,7 +73,6 @@ async function inicializarBaseDatos() {
       );
     `;
 
-    // Intentar agregar la columna activo si la tabla ya existía sin ella
     try {
       await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;`;
     } catch {}
@@ -226,7 +225,7 @@ fastify.post<{ Body: { usuario: string; password: string } }>('/login', async (r
   };
 });
 
-// Endpoint público para verificar DNI al registrarse
+// Verificar DNI (Validación estricta de lista blanca)
 fastify.get<{ Querystring: { dni: string } }>('/verificar-dni', async (request, reply) => {
   const { dni } = request.query;
   if (!dni) {
@@ -235,11 +234,12 @@ fastify.get<{ Querystring: { dni: string } }>('/verificar-dni', async (request, 
   }
   const users = await sql<UserRecord[]>`SELECT * FROM usuarios WHERE dni = ${dni}`;
   if (users.length === 0) {
-    return { encontrado: false };
+    return { encontrado: false, autorizado: false };
   }
   const u = users[0];
   return { 
     encontrado: true, 
+    autorizado: true,
     nombres: u.nombres, 
     apellidos: u.apellidos, 
     area_id: u.area_id,
@@ -247,39 +247,36 @@ fastify.get<{ Querystring: { dni: string } }>('/verificar-dni', async (request, 
   };
 });
 
-// Registro público de usuario nuevo
+// Registro público
 fastify.post<{ Body: { dni: string; nombres: string; apellidos: string; usuario: string; password: string; turnos_asignados_ids: number[] } }>('/registro', async (request, reply) => {
   const data = request.body;
+  
+  // Verificar si el DNI fue previamente autorizado/creado en la base de datos
+  const existingDni = await sql<UserRecord[]>`SELECT * FROM usuarios WHERE dni = ${data.dni}`;
+  if (existingDni.length === 0) {
+    reply.code(400);
+    return { error: "Su DNI no se encuentra autorizado en el sistema. Contacte a su supervisor para que registre su DNI previamente." };
+  }
+
+  const u = existingDni[0];
+  if (u.usuario && u.usuario.trim() !== '') {
+    reply.code(400);
+    return { error: "Este DNI ya cuenta con un usuario registrado en el sistema." };
+  }
+
   const existingUser = await sql`SELECT * FROM usuarios WHERE usuario = ${data.usuario}`;
   if (existingUser.length > 0) {
     reply.code(400);
     return { error: "El nombre de usuario ya está en uso." };
   }
 
-  const existingDni = await sql<UserRecord[]>`SELECT * FROM usuarios WHERE dni = ${data.dni}`;
-  if (existingDni.length > 0) {
-    const u = existingDni[0];
-    if (u.usuario && u.usuario.trim() !== '') {
-      reply.code(400);
-      return { error: "Este DNI ya cuenta con un usuario registrado en el sistema." };
-    }
-    // Actualizar el registro precargado por el supervisor con los datos de acceso
-    const result = await sql<UserRecord[]>`
-      UPDATE usuarios 
-      SET nombres = ${data.nombres}, apellidos = ${data.apellidos}, usuario = ${data.usuario}, password = ${data.password}, turnos_asignados_ids = ${data.turnos_asignados_ids || []}, activo = TRUE
-      WHERE dni = ${data.dni}
-      RETURNING *
-    `;
-    return { success: true, user: result[0] };
-  } else {
-    // Si no fue precargado, se crea nuevo sin área por defecto
-    const result = await sql<UserRecord[]>`
-      INSERT INTO usuarios (dni, nombres, apellidos, usuario, password, rol, area_id, turnos_asignados_ids, activo)
-      VALUES (${data.dni}, ${data.nombres}, ${data.apellidos}, ${data.usuario}, ${data.password}, 'usuario', NULL, ${data.turnos_asignados_ids || []}, TRUE)
-      RETURNING *
-    `;
-    return { success: true, user: result[0] };
-  }
+  const result = await sql<UserRecord[]>`
+    UPDATE usuarios 
+    SET nombres = ${data.nombres}, apellidos = ${data.apellidos}, usuario = ${data.usuario}, password = ${data.password}, turnos_asignados_ids = ${data.turnos_asignados_ids || []}, activo = TRUE
+    WHERE dni = ${data.dni}
+    RETURNING *
+  `;
+  return { success: true, user: result[0] };
 });
 
 // Áreas
@@ -321,6 +318,13 @@ fastify.get('/usuarios', async () => {
 
 fastify.post<{ Body: Omit<UserRecord, 'id'> }>('/usuarios', async (request, reply) => {
   const data = request.body;
+  if (data.dni) {
+    const existingDni = await sql`SELECT * FROM usuarios WHERE dni = ${data.dni}`;
+    if (existingDni.length > 0) {
+      reply.code(400);
+      return { error: "El DNI ya se encuentra registrado o autorizado." };
+    }
+  }
   if (data.usuario) {
     const existing = await sql`SELECT * FROM usuarios WHERE usuario = ${data.usuario}`;
     if (existing.length > 0) {
@@ -384,7 +388,7 @@ fastify.get('/turnos', async () => {
   }));
 });
 
-fastify.post<{ Body: Omit<HorarioSemanaConfig, 'id'> }>('/turnos', async (request) => {
+fastify.post<{ Body: Omit<HorarioSemanaConfig, 'id'> }>('/turnos', async (request, reply) => {
   const data = request.body;
   const result = await sql<HorarioSemanaConfig[]>`
     INSERT INTO turnos (nombre_turno, fecha_inicio, fecha_fin, lunes_viernes, sabado)
