@@ -225,7 +225,7 @@ fastify.post<{ Body: { usuario: string; password: string } }>('/login', async (r
   };
 });
 
-// Verificar DNI (Validación estricta de lista blanca)
+// Verificar DNI
 fastify.get<{ Querystring: { dni: string } }>('/verificar-dni', async (request, reply) => {
   const { dni } = request.query;
   if (!dni) {
@@ -251,7 +251,6 @@ fastify.get<{ Querystring: { dni: string } }>('/verificar-dni', async (request, 
 fastify.post<{ Body: { dni: string; nombres: string; apellidos: string; usuario: string; password: string; turnos_asignados_ids: number[] } }>('/registro', async (request, reply) => {
   const data = request.body;
   
-  // Verificar si el DNI fue previamente autorizado/creado en la base de datos
   const existingDni = await sql<UserRecord[]>`SELECT * FROM usuarios WHERE dni = ${data.dni}`;
   if (existingDni.length === 0) {
     reply.code(400);

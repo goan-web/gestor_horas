@@ -129,7 +129,7 @@
     </form>
   </div>
 
-  <!-- PANTALLA DE REGISTRO DE USUARIO NUEVO (Validación Estricta de DNI en Lista Blanca) -->
+  <!-- PANTALLA DE REGISTRO DE USUARIO NUEVO -->
   <div id="register-container" class="auth-card hidden">
     <h2>📝 Registro de Usuario y Horarios</h2>
     <form id="register-form" style="display: flex; flex-direction: column; gap: 12px;">
@@ -226,7 +226,7 @@
       </div>
     </header>
 
-    <!-- MODAL CONFIGURACIÓN COMPLETA DE USUARIO / SUPERVISOR -->
+    <!-- MODAL CONFIGURACIÓN DE USUARIO CON CREACIÓN DE HORARIOS PROPIOS -->
     <div id="modal-password" class="modal-overlay hidden">
       <div class="modal-card">
         <h2 id="modal-config-title">⚙️ Configurar Mis Datos</h2>
@@ -254,10 +254,47 @@
               <button type="button" class="btn-eye" onclick="togglePasswordVisibility('config-password', this)">👁️</button>
             </div>
           </div>
+
+          <!-- FORMULARIO INTERNO PARA CREAR/AÑADIR HORARIOS EN CONFIGURACIÓN DE USUARIO -->
+          <div id="config-turnos-crear-box" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-top: 5px;">
+            <label style="font-weight: bold; color: var(--primary); margin-bottom: 8px;">⚙️ Crear Nuevo Horario Rotativo (Se selecciona automáticamente)</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label style="font-size: 0.7rem;">Nombre del Turno</label>
+                <input type="text" id="config-turno-nombre" placeholder="Ej: Turno Nuevo">
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">Fecha Inicio</label>
+                <input type="date" id="config-turno-inicio">
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">Fecha Fin</label>
+                <input type="date" id="config-turno-fin">
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">Lunes a Viernes</label>
+                <div class="time-range-group">
+                  <input type="time" id="config-turno-lv-desde" value="07:00">
+                  <span>-</span>
+                  <input type="time" id="config-turno-lv-hasta" value="17:00">
+                </div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <label style="font-size: 0.7rem;">Sábado</label>
+                <div class="time-range-group">
+                  <input type="time" id="config-turno-sab-desde" value="08:00">
+                  <span>-</span>
+                  <input type="time" id="config-turno-sab-hasta" value="13:00">
+                </div>
+              </div>
+            </div>
+            <button type="button" onclick="agregarTurnoEnConfiguracion()" class="btn-secondary" style="width: 100%; padding: 6px; font-size: 0.8rem;">➕ Crear y Seleccionar este Horario</button>
+          </div>
+
           <div id="config-turnos-box">
-            <label>Horarios Rotativos Asignados</label>
+            <label>Mis Horarios Rotativos Asignados</label>
             <div id="config-turnos-checkboxes" class="checkbox-container">
-              <!-- Checkboxes dinámicos -->
+              <!-- Checkboxes dinámicos filtrados -->
             </div>
           </div>
 
@@ -344,9 +381,10 @@
 
       <!-- GESTIÓN / AUTORIZACIÓN DE DNIs DE COLABORADORES (VISIBLE PARA SUPERVISOR Y ADMIN) -->
       <div id="supervisor-dni-section" class="hidden" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
-        <h2>📋 Autorizar DNI de Colaborador (Lista Blanca)</h2>
+        <h2 id="sup-dni-form-title">📋 Autorizar DNI de Colaborador (Lista Blanca)</h2>
         <p class="subtitle" style="margin-bottom: 10px;">Registra aquí el DNI y nombres del colaborador para que pueda completar su registro en el sistema.</p>
         <form id="supervisor-dni-form" style="max-width: 600px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: flex-end;">
+          <input type="hidden" id="sup-edit-user-id">
           <div>
             <label>DNI (8 dígitos)</label>
             <input type="text" id="sup-dni" required maxlength="8" placeholder="DNI">
@@ -359,7 +397,10 @@
             <label>Apellidos</label>
             <input type="text" id="sup-apellidos" required placeholder="Apellidos">
           </div>
-          <button type="submit" class="btn-primary" style="height: 38px;">Autorizar DNI</button>
+          <div style="display: flex; gap: 4px;">
+            <button type="button" id="btn-cancel-sup-dni" onclick="cancelarEdicionSupDni()" class="btn-secondary hidden" style="height: 38px;">X</button>
+            <button type="submit" id="btn-submit-sup-dni" class="btn-primary" style="height: 38px;">Autorizar DNI</button>
+          </div>
         </form>
       </div>
 
@@ -417,7 +458,7 @@
         </form>
       </div>
 
-      <!-- TABLA DE LISTA DE COLABORADORES (VISTA COMPARTIDA ADMIN/SUPERVISOR CON HASTA 6 FILAS SCROLL) -->
+      <!-- TABLA DE LISTA DE COLABORADORES -->
       <h2 id="list-section-title" style="margin-top: 25px;">👥 Lista de Colaboradores</h2>
       <div class="table-container-6-lines">
         <table>
@@ -490,11 +531,12 @@
       </form>
     </section>
 
+    <!-- REPORTE PDF EXPORTAR -->
     <section class="pdf-section">
       <div class="pdf-controls">
         <span>📄 Exportar Reporte PDF:</span>
         <div id="pdf-filtro-area-container" style="display:inline-block;" class="hidden"></div>
-        <div id="pdf-filtro-usuario-container" style="display:inline-block;"></div>
+        <div id="pdf-filtro-usuario-container" style="display:inline-block;" class="hidden"></div>
         <input type="date" id="pdf-desde">
         <span style="color: var(--text-muted); font-size: 0.75rem;">a</span>
         <input type="date" id="pdf-hasta">
@@ -556,6 +598,7 @@
     let usuariosLista = [];
     let areasLista = [];
     let turnosTemporalesRegistro = [];
+    let turnosTemporalesConfig = [];
 
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);
@@ -597,11 +640,6 @@
         return;
       }
 
-      if (turnosTemporalesRegistro.length >= 3) {
-        alert("Puedes registrar máximo 3 horarios.");
-        return;
-      }
-
       const turnoObj = {
         nombre_turno: nombre,
         fecha_inicio: inicio,
@@ -619,6 +657,7 @@
         if (res.ok) {
           const creado = await res.json();
           turnosTemporalesRegistro.push(creado);
+          turnosConfigList.push(creado);
           alert("¡Horario creado y seleccionado automáticamente!");
           document.getElementById('reg-turno-nombre').value = '';
           document.getElementById('reg-turno-inicio').value = '';
@@ -643,6 +682,79 @@
         container.innerHTML += `
           <label class="checkbox-item">
             <input type="checkbox" name="reg_turnos" value="${t.id}" checked>
+            <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
+          </label>
+        `;
+      });
+    }
+
+    async function agregarTurnoEnConfiguracion() {
+      const nombre = document.getElementById('config-turno-nombre').value.trim();
+      const inicio = document.getElementById('config-turno-inicio').value;
+      const fin = document.getElementById('config-turno-fin').value;
+      const lvDesde = document.getElementById('config-turno-lv-desde').value;
+      const lvHasta = document.getElementById('config-turno-lv-hasta').value;
+      const sabDesde = document.getElementById('config-turno-sab-desde').value;
+      const sabHasta = document.getElementById('config-turno-sab-hasta').value;
+
+      if (!nombre || !inicio || !fin) {
+        alert("Completa el nombre del turno, fecha de inicio y fecha de fin.");
+        return;
+      }
+
+      const turnoObj = {
+        nombre_turno: nombre,
+        fecha_inicio: inicio,
+        fecha_fin: fin,
+        lunes_viernes: `${lvDesde} - ${lvHasta}`,
+        sabado: `${sabDesde} - ${sabHasta}`
+      };
+
+      try {
+        const res = await fetch('/turnos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(turnoObj)
+        });
+        if (res.ok) {
+          const creado = await res.json();
+          turnosConfigList.push(creado);
+          turnosTemporalesConfig.push(creado);
+          alert("¡Horario creado y seleccionado en tu configuración!");
+          document.getElementById('config-turno-nombre').value = '';
+          document.getElementById('config-turno-inicio').value = '';
+          document.getElementById('config-turno-fin').value = '';
+          
+          // Refrescar checkboxes de configuración manteniendo los ya seleccionados + el nuevo
+          const asignadosActuales = Array.from(document.querySelectorAll('input[name="config_turnos"]:checked')).map(cb => Number(cb.value));
+          asignadosActuales.push(creado.id);
+          poblarCheckboxesConfiguracion(asignadosActuales);
+        } else {
+          alert("Error al guardar el horario.");
+        }
+      } catch (e) {
+        console.error("Error al registrar turno en config:", e);
+      }
+    }
+
+    function poblarCheckboxesConfiguracion(asignadosIds) {
+      const container = document.getElementById('config-turnos-checkboxes');
+      container.innerHTML = '';
+      
+      // Mostrar ÚNICAMENTE los turnos asignados al usuario o recién creados por él en esta sesión de config, 
+      // para evitar mostrar turnos masivos de otros usuarios.
+      const turnosPermitidos = turnosConfigList.filter(t => asignadosIds.includes(t.id) || turnosTemporalesConfig.includes(t));
+
+      if (turnosPermitidos.length === 0) {
+        container.innerHTML = '<span style="font-size:0.75rem; color: var(--text-muted);">No tienes horarios asignados. Crea uno arriba.</span>';
+        return;
+      }
+
+      turnosPermitidos.forEach(t => {
+        const checked = asignadosIds.includes(t.id) ? 'checked' : '';
+        container.innerHTML += `
+          <label class="checkbox-item">
+            <input type="checkbox" name="config_turnos" value="${t.id}" ${checked}>
             <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
           </label>
         `;
@@ -749,32 +861,36 @@
           document.getElementById('admin-area-management').classList.remove('hidden');
           document.getElementById('admin-turnos-management').classList.remove('hidden');
           document.getElementById('admin-user-management').classList.remove('hidden');
-          document.getElementById('supervisor-dni-section').classList.add('hidden'); // Admin usa su panel completo
+          document.getElementById('supervisor-dni-section').classList.add('hidden');
           document.getElementById('overtime-section').classList.add('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
           document.getElementById('filtro-area-wrapper').classList.remove('hidden');
           document.getElementById('pdf-filtro-area-container').classList.remove('hidden');
+          document.getElementById('pdf-filtro-usuario-container').classList.remove('hidden');
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
-          document.getElementById('btn-config-user').classList.remove('hidden'); // Permite cambiar contraseña al admin también
+          document.getElementById('btn-config-user').classList.remove('hidden');
           document.getElementById('opt-admin').style.display = 'block';
         } else if (usuarioActual.rol === 'supervisor') {
           document.getElementById('admin-panel-section').classList.remove('hidden');
           document.getElementById('admin-area-management').classList.add('hidden');
           document.getElementById('admin-turnos-management').classList.add('hidden');
           document.getElementById('admin-user-management').classList.add('hidden');
-          document.getElementById('supervisor-dni-section').classList.remove('hidden'); // Habilitado para supervisor
+          document.getElementById('supervisor-dni-section').classList.remove('hidden');
           document.getElementById('overtime-section').classList.add('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.remove('hidden');
           document.getElementById('filtro-area-wrapper').classList.add('hidden');
           document.getElementById('pdf-filtro-area-container').classList.add('hidden');
+          document.getElementById('pdf-filtro-usuario-container').classList.remove('hidden');
           document.getElementById('th-colab').classList.remove('hidden');
           document.getElementById('balance-box-container').classList.add('hidden');
-          document.getElementById('btn-config-user').classList.remove('hidden'); // Habilitado para cambiar contraseña de supervisor
-        } else {
+          document.getElementById('btn-config-user').classList.remove('hidden');
+        } else { // Usuario regular
           document.getElementById('admin-panel-section').classList.add('hidden');
           document.getElementById('overtime-section').classList.remove('hidden');
           document.getElementById('admin-filtro-tabla-container').classList.add('hidden');
+          document.getElementById('pdf-filtro-area-container').classList.add('hidden');
+          document.getElementById('pdf-filtro-usuario-container').classList.add('hidden');
           document.getElementById('th-colab').classList.add('hidden');
           document.getElementById('balance-box-container').classList.remove('hidden');
           document.getElementById('btn-config-user').classList.remove('hidden');
@@ -804,23 +920,18 @@
       document.getElementById('config-usuario').value = usuarioActual.usuario || '';
       document.getElementById('config-password').value = '';
       
+      turnosTemporalesConfig = [];
       const turnosBox = document.getElementById('config-turnos-box');
+      const crearBox = document.getElementById('config-turnos-crear-box');
+
       if (usuarioActual.rol === 'supervisor' || usuarioActual.rol === 'admin') {
-        turnosBox.style.display = 'none'; // Supervisores/Admin configuran sus credenciales básicas
+        turnosBox.style.display = 'none';
+        crearBox.style.display = 'none';
       } else {
         turnosBox.style.display = 'block';
-        const container = document.getElementById('config-turnos-checkboxes');
-        container.innerHTML = '';
+        crearBox.style.display = 'block';
         const asignados = usuarioActual.turnos_asignados_ids || [];
-        turnosConfigList.forEach(t => {
-          const checked = asignados.includes(t.id) ? 'checked' : '';
-          container.innerHTML += `
-            <label class="checkbox-item">
-              <input type="checkbox" name="config_turnos" value="${t.id}" ${checked}>
-              <span><b>${t.nombre_turno}</b> (L-V: ${t.lunes_viernes} | Sáb: ${t.sabado})</span>
-            </label>
-          `;
-        });
+        poblarCheckboxesConfiguracion(asignados);
       }
 
       document.getElementById('modal-password').classList.remove('hidden');
@@ -861,7 +972,7 @@
       if (res.ok) {
         const data = await res.json();
         usuarioActual = data;
-        alert("Datos y contraseña actualizados correctamente.");
+        alert("Datos y horarios actualizados correctamente.");
         cerrarModalPassword();
         document.getElementById('welcome-user').innerText = `Bienvenido, ${usuarioActual.nombres} ${usuarioActual.apellidos} (${usuarioActual.rol.toUpperCase()})`;
       } else {
@@ -878,43 +989,82 @@
       }
     }
 
-    // Autorización rápida de DNI por Supervisor
+    // Formulario Autorizar/Editar DNI por Supervisor
     const supervisorDniForm = document.getElementById('supervisor-dni-form');
     if (supervisorDniForm) {
       supervisorDniForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const editId = document.getElementById('sup-edit-user-id').value;
         const dni = document.getElementById('sup-dni').value.trim();
         const nombres = document.getElementById('sup-nombres').value.trim();
         const apellidos = document.getElementById('sup-apellidos').value.trim();
         const areaIdSup = obtenerAreaIdActualSupervisor();
 
-        const payload = {
-          dni,
-          nombres,
-          apellidos,
-          usuario: null,
-          password: null,
-          rol: 'usuario',
-          area_id: areaIdSup,
-          turnos_asignados_ids: []
-        };
-
-        const res = await fetch('/usuarios', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          alert("¡DNI autorizado con éxito! El colaborador ya puede registrarse.");
-          supervisorDniForm.reset();
-          await cargarUsuarios();
-          await cargarFiltrosAreaYUsuarios();
+        if (editId) {
+          const res = await fetch(`/usuarios/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dni, nombres, apellidos })
+          });
+          if (res.ok) {
+            alert("¡Datos de colaborador actualizados!");
+            cancelarEdicionSupDni();
+            await cargarUsuarios();
+            await cargarFiltrosAreaYUsuarios();
+          } else {
+            const err = await res.json();
+            alert(err.error || "Error al actualizar colaborador.");
+          }
         } else {
-          const err = await res.json();
-          alert(err.error || "Error al autorizar DNI.");
+          const payload = {
+            dni,
+            nombres,
+            apellidos,
+            usuario: null,
+            password: null,
+            rol: 'usuario',
+            area_id: areaIdSup,
+            turnos_asignados_ids: []
+          };
+
+          const res = await fetch('/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            alert("¡DNI autorizado con éxito! El colaborador ya puede registrarse.");
+            supervisorDniForm.reset();
+            await cargarUsuarios();
+            await cargarFiltrosAreaYUsuarios();
+          } else {
+            const err = await res.json();
+            alert(err.error || "Error al autorizar DNI.");
+          }
         }
       });
+    }
+
+    function editarColaboradorSupervisor(id) {
+      const u = usuariosLista.find(item => Number(item.id) === Number(id));
+      if (!u) return;
+      document.getElementById('sup-edit-user-id').value = u.id;
+      document.getElementById('sup-dni').value = u.dni || '';
+      document.getElementById('sup-nombres').value = u.nombres || '';
+      document.getElementById('sup-apellidos').value = u.apellidos || '';
+
+      document.getElementById('sup-dni-form-title').innerText = "✏️ Modificar Datos de Colaborador";
+      document.getElementById('btn-submit-sup-dni').innerText = "Guardar Cambios";
+      document.getElementById('btn-cancel-sup-dni').classList.remove('hidden');
+    }
+
+    function cancelarEdicionSupDni() {
+      if (supervisorDniForm) supervisorDniForm.reset();
+      document.getElementById('sup-edit-user-id').value = '';
+      document.getElementById('sup-dni-form-title').innerText = "📋 Autorizar DNI de Colaborador (Lista Blanca)";
+      document.getElementById('btn-submit-sup-dni').innerText = "Autorizar DNI";
+      document.getElementById('btn-cancel-sup-dni').classList.add('hidden');
     }
 
     // Gestión de Áreas
@@ -1152,10 +1302,11 @@
           const areaObj = areasLista.find(a => Number(a.id) === Number(u.area_id));
           const nombreArea = areaObj ? areaObj.nombre : 'Sin Área';
           const idsAsignados = u.turnos_asignados_ids || [];
-          const nombresTurnos = turnosConfigList
+          
+          const detalleHorarios = turnosConfigList
             .filter(t => idsAsignados.includes(t.id))
-            .map(t => t.nombre_turno)
-            .join(', ');
+            .map(t => `L-V: ${t.lunes_viernes} | Sáb: ${t.sabado}`)
+            .join(' <br> ');
 
           let passTd = '';
           if (usuarioActual.rol === 'admin') {
@@ -1180,7 +1331,11 @@
               </div>
             `;
           } else if (usuarioActual.rol === 'supervisor') {
-            accionesHtml = `<span style="font-size:0.75rem; color:var(--text-muted);">Solo lectura</span>`;
+            accionesHtml = `
+              <div class="actions">
+                <button onclick="editarColaboradorSupervisor(${u.id})" class="btn-action btn-edit" title="Editar DNI / Datos">✏️</button>
+              </div>
+            `;
           }
 
           const estadoBadge = (u.activo ?? true) ? '' : `<span class="badge" style="background:rgba(248,113,113,0.1); color:var(--rose); border-color:var(--rose); margin-left:4px;">Bloqueado</span>`;
@@ -1193,7 +1348,7 @@
             <td><span class="badge ${u.rol === 'admin' ? 'badge-extra' : (u.rol === 'supervisor' ? 'badge-feriado' : 'badge-papeleta')}">${u.rol}</span></td>
             <td>${nombreArea}</td>
             ${passTd}
-            <td style="color: var(--emerald); font-weight: 500;">${nombresTurnos || 'Sin asignar'}</td>
+            <td style="color: var(--emerald); font-weight: 500; font-size: 0.75rem;">${detalleHorarios || 'Sin asignar'}</td>
             <td style="text-align:center;">${accionesHtml}</td>
           `;
           tbody.appendChild(tr);
@@ -1255,7 +1410,7 @@
         }
 
         actualizarFiltroUsuariosPorArea();
-        if (usuarioActual.rol === 'admin') {
+        if (usuarioActual.rol === 'admin' || usuarioActual.rol === 'supervisor') {
           actualizarPdfUsuariosPorArea();
         }
       } catch (e) {
@@ -1307,7 +1462,7 @@
           subset = usuariosLista.filter(u => u.rol === 'usuario');
         }
       } else {
-        subset = usuariosLista.filter(u => u.usuario === usuarioActual.usuario);
+        subset = [];
       }
 
       let selectPdfHtml = `<select id="pdf-usuario" style="margin-right: 8px;"><option value="todos">-- Todos --</option>`;
